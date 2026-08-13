@@ -4,7 +4,7 @@
 // m/f/l = 男名/女名/姓氏池；CJK 地区另有 mr/fr/lr 对应罗马化（用于生成邮箱）
 const COUNTRIES = {
   US: {
-    name: '美国', en: 'United States', lang: 'en', fmt: 'NS',
+    flag: '🇺🇸', name: '美国', en: 'United States', lang: 'en', fmt: 'NS',
     cities: [['New York', 40.73, -73.99, .06], ['Los Angeles', 34.05, -118.26, .08], ['Chicago', 41.88, -87.66, .06], ['Seattle', 47.61, -122.33, .05], ['Boston', 42.35, -71.07, .04]],
     phones: ['+1 212 N## ####', '+1 415 N## ####', '+1 312 N## ####', '+1 206 N## ####', '+1 617 N## ####'],
     m: ['James', 'Michael', 'David', 'Daniel', 'Ryan', 'Kevin', 'Tyler', 'Ethan'],
@@ -12,7 +12,7 @@ const COUNTRIES = {
     l: ['Smith', 'Johnson', 'Brown', 'Miller', 'Davis', 'Wilson', 'Anderson', 'Taylor'],
   },
   CA: {
-    name: '加拿大', en: 'Canada', lang: 'en', fmt: 'NS',
+    flag: '🇨🇦', name: '加拿大', en: 'Canada', lang: 'en', fmt: 'NS',
     cities: [['Toronto', 43.66, -79.39, .06], ['Vancouver', 49.26, -123.11, .04], ['Montreal', 45.51, -73.57, .05], ['Calgary', 51.04, -114.07, .05]],
     phones: ['+1 416 N## ####', '+1 604 N## ####', '+1 514 N## ####', '+1 403 N## ####'],
     m: ['Liam', 'Noah', 'William', 'Benjamin', 'Lucas', 'Owen', 'Nathan', 'Jack'],
@@ -20,7 +20,7 @@ const COUNTRIES = {
     l: ['Martin', 'Roy', 'Tremblay', 'Campbell', 'Stewart', 'Scott', 'MacDonald', 'White'],
   },
   UK: {
-    name: '英国', en: 'United Kingdom', lang: 'en', fmt: 'NS',
+    flag: '🇬🇧', name: '英国', en: 'United Kingdom', lang: 'en', fmt: 'NS',
     cities: [['London', 51.51, -0.12, .08], ['Manchester', 53.48, -2.24, .04], ['Birmingham', 52.48, -1.90, .04], ['Edinburgh', 55.95, -3.19, .03]],
     phones: ['+44 74## ######', '+44 75## ######', '+44 77## ######', '+44 79## ######'],
     m: ['Oliver', 'George', 'Harry', 'Charlie', 'Thomas', 'Oscar', 'Alfie', 'Henry'],
@@ -28,7 +28,7 @@ const COUNTRIES = {
     l: ['Jones', 'Williams', 'Evans', 'Thomas', 'Roberts', 'Walker', 'Wright', 'Hughes'],
   },
   DE: {
-    name: '德国', en: 'Germany', lang: 'de', fmt: 'SN',
+    flag: '🇩🇪', name: '德国', en: 'Germany', lang: 'de', fmt: 'SN',
     cities: [['Berlin', 52.52, 13.40, .07], ['München', 48.14, 11.57, .05], ['Hamburg', 53.55, 9.99, .05], ['Köln', 50.94, 6.95, .04], ['Frankfurt', 50.11, 8.68, .04]],
     phones: ['+49 151 ########', '+49 160 #######', '+49 170 #######', '+49 176 ########'],
     m: ['Lukas', 'Felix', 'Jonas', 'Maximilian', 'Paul', 'Leon', 'Finn', 'Moritz'],
@@ -36,7 +36,7 @@ const COUNTRIES = {
     l: ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Wagner', 'Becker', 'Hoffmann'],
   },
   FR: {
-    name: '法国', en: 'France', lang: 'fr', fmt: 'NS',
+    flag: '🇫🇷', name: '法国', en: 'France', lang: 'fr', fmt: 'NS',
     cities: [['Paris', 48.86, 2.34, .05], ['Lyon', 45.76, 4.84, .03], ['Marseille', 43.30, 5.38, .04], ['Toulouse', 43.60, 1.44, .03]],
     phones: ['+33 6 ## ## ## ##', '+33 7 ## ## ## ##'],
     m: ['Lucas', 'Hugo', 'Louis', 'Gabriel', 'Arthur', 'Jules', 'Théo', 'Antoine'],
@@ -44,7 +44,7 @@ const COUNTRIES = {
     l: ['Martin', 'Bernard', 'Dubois', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Fournier'],
   },
   IT: {
-    name: '意大利', en: 'Italy', lang: 'it', fmt: 'SN',
+    flag: '🇮🇹', name: '意大利', en: 'Italy', lang: 'it', fmt: 'SN',
     cities: [['Roma', 41.90, 12.49, .05], ['Milano', 45.47, 9.19, .04], ['Torino', 45.07, 7.68, .03], ['Bologna', 44.49, 11.34, .03]],
     phones: ['+39 320 #######', '+39 333 #######', '+39 347 #######', '+39 389 #######'],
     m: ['Francesco', 'Alessandro', 'Lorenzo', 'Matteo', 'Andrea', 'Gabriele', 'Marco', 'Luca'],
@@ -52,7 +52,7 @@ const COUNTRIES = {
     l: ['Rossi', 'Russo', 'Ferrari', 'Esposito', 'Bianchi', 'Romano', 'Colombo', 'Ricci'],
   },
   ES: {
-    name: '西班牙', en: 'Spain', lang: 'es', fmt: 'S,N',
+    flag: '🇪🇸', name: '西班牙', en: 'Spain', lang: 'es', fmt: 'S,N',
     cities: [['Madrid', 40.42, -3.70, .05], ['Barcelona', 41.39, 2.16, .04], ['Valencia', 39.47, -0.38, .03], ['Sevilla', 37.39, -5.99, .03]],
     phones: ['+34 6## ### ###', '+34 7## ### ###'],
     m: ['Alejandro', 'Daniel', 'Pablo', 'Hugo', 'Álvaro', 'Adrián', 'David', 'Javier'],
@@ -60,7 +60,7 @@ const COUNTRIES = {
     l: ['García', 'Rodríguez', 'Martínez', 'López', 'Sánchez', 'Pérez', 'Gómez', 'Fernández'],
   },
   NL: {
-    name: '荷兰', en: 'Netherlands', lang: 'nl', fmt: 'SN',
+    flag: '🇳🇱', name: '荷兰', en: 'Netherlands', lang: 'nl', fmt: 'SN',
     cities: [['Amsterdam', 52.37, 4.90, .04], ['Rotterdam', 51.92, 4.48, .04], ['Utrecht', 52.09, 5.12, .03], ['Den Haag', 52.08, 4.30, .03]],
     phones: ['+31 6 ########'],
     m: ['Daan', 'Sem', 'Lucas', 'Finn', 'Luuk', 'Thijs', 'Lars', 'Bram'],
@@ -68,7 +68,7 @@ const COUNTRIES = {
     l: ['de Jong', 'Jansen', 'de Vries', 'van den Berg', 'Bakker', 'Visser', 'Smit', 'Meijer'],
   },
   CH: {
-    name: '瑞士', en: 'Switzerland', lang: 'de', fmt: 'SN',
+    flag: '🇨🇭', name: '瑞士', en: 'Switzerland', lang: 'de', fmt: 'SN',
     cities: [['Zürich', 47.38, 8.54, .03], ['Genève', 46.20, 6.15, .03], ['Basel', 47.56, 7.59, .03], ['Bern', 46.95, 7.44, .02]],
     phones: ['+41 76 ### ## ##', '+41 78 ### ## ##', '+41 79 ### ## ##'],
     m: ['Noah', 'Liam', 'Matteo', 'Luca', 'Leon', 'David', 'Gabriel', 'Julian'],
@@ -76,7 +76,7 @@ const COUNTRIES = {
     l: ['Müller', 'Meier', 'Schmid', 'Keller', 'Weber', 'Huber', 'Schneider', 'Steiner'],
   },
   AT: {
-    name: '奥地利', en: 'Austria', lang: 'de', fmt: 'SN',
+    flag: '🇦🇹', name: '奥地利', en: 'Austria', lang: 'de', fmt: 'SN',
     cities: [['Wien', 48.21, 16.37, .05], ['Graz', 47.07, 15.44, .03], ['Linz', 48.31, 14.29, .02], ['Salzburg', 47.80, 13.04, .02]],
     phones: ['+43 660 #######', '+43 664 #######', '+43 676 #######'],
     m: ['Lukas', 'David', 'Tobias', 'Felix', 'Simon', 'Jakob', 'Maximilian', 'Elias'],
@@ -84,7 +84,7 @@ const COUNTRIES = {
     l: ['Gruber', 'Huber', 'Bauer', 'Wagner', 'Pichler', 'Steiner', 'Moser', 'Mayer'],
   },
   SE: {
-    name: '瑞典', en: 'Sweden', lang: 'sv', fmt: 'SN',
+    flag: '🇸🇪', name: '瑞典', en: 'Sweden', lang: 'sv', fmt: 'SN',
     cities: [['Stockholm', 59.33, 18.06, .05], ['Göteborg', 57.71, 11.97, .04], ['Malmö', 55.60, 13.00, .03]],
     phones: ['+46 70 ### ## ##', '+46 72 ### ## ##', '+46 73 ### ## ##'],
     m: ['William', 'Oscar', 'Hugo', 'Lucas', 'Elias', 'Axel', 'Erik', 'Filip'],
@@ -92,7 +92,7 @@ const COUNTRIES = {
     l: ['Andersson', 'Johansson', 'Karlsson', 'Nilsson', 'Eriksson', 'Larsson', 'Olsson', 'Lindberg'],
   },
   PL: {
-    name: '波兰', en: 'Poland', lang: 'pl', fmt: 'SN',
+    flag: '🇵🇱', name: '波兰', en: 'Poland', lang: 'pl', fmt: 'SN',
     cities: [['Warszawa', 52.23, 21.01, .05], ['Kraków', 50.06, 19.94, .04], ['Wrocław', 51.11, 17.03, .03], ['Gdańsk', 54.35, 18.65, .03]],
     phones: ['+48 50# ### ###', '+48 60# ### ###', '+48 72# ### ###', '+48 88# ### ###'],
     m: ['Jakub', 'Kacper', 'Szymon', 'Filip', 'Mateusz', 'Antoni', 'Jan', 'Wojciech'],
@@ -100,7 +100,7 @@ const COUNTRIES = {
     l: ['Nowak', 'Kowalski', 'Wiśniewski', 'Wójcik', 'Kowalczyk', 'Kamiński', 'Lewandowski', 'Zieliński'],
   },
   CZ: {
-    name: '捷克', en: 'Czechia', lang: 'cs', fmt: 'SN',
+    flag: '🇨🇿', name: '捷克', en: 'Czechia', lang: 'cs', fmt: 'SN',
     cities: [['Praha', 50.08, 14.43, .04], ['Brno', 49.20, 16.61, .03], ['Ostrava', 49.84, 18.29, .03]],
     phones: ['+420 601 ### ###', '+420 605 ### ###', '+420 720 ### ###', '+420 777 ### ###'],
     m: ['Jakub', 'Jan', 'Tomáš', 'Adam', 'Matyáš', 'Filip', 'Vojtěch', 'Ondřej'],
@@ -108,7 +108,7 @@ const COUNTRIES = {
     l: ['Novák', 'Svoboda', 'Novotný', 'Dvořák', 'Černý', 'Procházka', 'Kučera', 'Veselý'],
   },
   PT: {
-    name: '葡萄牙', en: 'Portugal', lang: 'pt', fmt: 'S,N',
+    flag: '🇵🇹', name: '葡萄牙', en: 'Portugal', lang: 'pt', fmt: 'S,N',
     cities: [['Lisboa', 38.72, -9.14, .04], ['Porto', 41.15, -8.61, .03], ['Coimbra', 40.21, -8.42, .02]],
     phones: ['+351 91# ### ###', '+351 93# ### ###', '+351 96# ### ###'],
     m: ['João', 'Francisco', 'Santiago', 'Afonso', 'Duarte', 'Miguel', 'Tomás', 'Rodrigo'],
@@ -116,7 +116,7 @@ const COUNTRIES = {
     l: ['Silva', 'Santos', 'Ferreira', 'Pereira', 'Oliveira', 'Costa', 'Rodrigues', 'Martins'],
   },
   JP: {
-    name: '日本', en: 'Japan', lang: 'ja', fmt: 'SN',
+    flag: '🇯🇵', name: '日本', en: 'Japan', lang: 'ja', fmt: 'SN',
     cities: [['東京', 35.68, 139.75, .07], ['大阪', 34.69, 135.50, .05], ['京都', 35.01, 135.76, .03], ['名古屋', 35.17, 136.90, .04]],
     phones: ['+81 90 #### ####', '+81 80 #### ####', '+81 70 #### ####'],
     m: ['蓮', '大翔', '悠真', '陽翔', '湊', '樹', '健太', '翔太'],
@@ -127,7 +127,7 @@ const COUNTRIES = {
     lr: ['sato', 'suzuki', 'takahashi', 'tanaka', 'ito', 'watanabe', 'yamamoto', 'nakamura'],
   },
   KR: {
-    name: '韩国', en: 'South Korea', lang: 'ko', fmt: 'SN',
+    flag: '🇰🇷', name: '韩国', en: 'South Korea', lang: 'ko', fmt: 'SN',
     cities: [['서울', 37.55, 126.99, .07], ['부산', 35.16, 129.06, .05], ['인천', 37.46, 126.70, .04]],
     phones: ['+82 10 #### ####'],
     m: ['민준', '서준', '도윤', '예준', '시우', '하준', '지호', '준우'],
@@ -138,7 +138,7 @@ const COUNTRIES = {
     lr: ['kim', 'lee', 'park', 'choi', 'jung', 'kang', 'cho', 'yun'],
   },
   TW: {
-    name: '中国台湾', en: 'Taiwan', lang: 'zh-TW', fmt: 'SN',
+    flag: '🇹🇼', name: '中国台湾', en: 'Taiwan', lang: 'zh-TW', fmt: 'SN',
     cities: [['台北', 25.04, 121.55, .05], ['台中', 24.15, 120.66, .04], ['高雄', 22.63, 120.30, .04]],
     phones: ['+886 9## ### ###'],
     m: ['家豪', '志明', '俊傑', '建宏', '冠宇', '宗翰', '柏翰', '承翰'],
@@ -149,7 +149,7 @@ const COUNTRIES = {
     lr: ['chen', 'lin', 'huang', 'zhang', 'li', 'wang', 'wu', 'liu'],
   },
   SG: {
-    name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS',
+    flag: '🇸🇬', name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS',
     cities: [['Singapore', 1.32, 103.85, .07]],
     phones: ['+65 8### ####', '+65 9### ####'],
     m: ['Wei Ming', 'Jun Jie', 'Kai Wen', 'Zhi Hao', 'Arjun', 'Ryan', 'Ethan', 'Daniel'],
@@ -157,7 +157,7 @@ const COUNTRIES = {
     l: ['Tan', 'Lim', 'Lee', 'Ng', 'Wong', 'Goh', 'Chua', 'Ong'],
   },
   AU: {
-    name: '澳大利亚', en: 'Australia', lang: 'en', fmt: 'NS',
+    flag: '🇦🇺', name: '澳大利亚', en: 'Australia', lang: 'en', fmt: 'NS',
     cities: [['Sydney', -33.87, 151.21, .06], ['Melbourne', -37.81, 144.96, .06], ['Brisbane', -27.47, 153.02, .05], ['Perth', -31.95, 115.86, .05]],
     phones: ['+61 4## ### ###'],
     m: ['Jack', 'Oliver', 'William', 'Noah', 'Thomas', 'Lachlan', 'Cooper', 'Henry'],
@@ -165,15 +165,15 @@ const COUNTRIES = {
     l: ['Smith', 'Jones', 'Williams', 'Brown', 'Wilson', 'Taylor', 'Kelly', 'Ryan'],
   },
   BR: {
-    name: '巴西', en: 'Brazil', lang: 'pt-BR', fmt: 'S,N',
+    flag: '🇧🇷', name: '巴西', en: 'Brazil', lang: 'pt-BR', fmt: 'S,N',
     cities: [['São Paulo', -23.55, -46.64, .07], ['Rio de Janeiro', -22.91, -43.20, .05], ['Curitiba', -25.43, -49.27, .04]],
     phones: ['+55 11 9#### ####', '+55 21 9#### ####', '+55 41 9#### ####'],
     m: ['Miguel', 'Arthur', 'Gael', 'Heitor', 'Davi', 'Gabriel', 'Bernardo', 'Lucas'],
     f: ['Helena', 'Alice', 'Laura', 'Maria', 'Valentina', 'Heloísa', 'Júlia', 'Lívia'],
     l: ['Silva', 'Santos', 'Oliveira', 'Souza', 'Lima', 'Pereira', 'Costa', 'Almeida'],
   },
-  VN: { // 由 add-country.js 自动生成；姓名池为通用占位，建议按当地习惯完善
-    name: '越南', en: 'Vietnam', lang: 'vi', fmt: 'SN',
+  VN: {
+    flag: '🇻🇳', name: '越南', en: 'Vietnam', lang: 'vi', fmt: 'SN',
     cities: [['Thành phố Hồ Chí Minh', 10.77, 106.72, 0.07], ['Hà Nội', 21.03, 105.85, 0.07], ['Đồng Nai', 10.92, 106.85, 0.05], ['Hải Phòng', 20.88, 106.68, 0.05]],
     phones: ['+84 90 ### ####', '+84 91 ### ####', '+84 96 ### ####', '+84 98 ### ####'],
     m: ['Minh', 'Hùng', 'Duy', 'Quang', 'Anh Tuấn', 'Đức', 'Hoàng', 'Nam'],
