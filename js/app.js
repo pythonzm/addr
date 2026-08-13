@@ -76,8 +76,7 @@ function initCountrySelector() {
   for (const [code, c] of Object.entries(COUNTRIES)) {
     const opt = document.createElement('option');
     opt.value = code;
-    const flag = c.flag ? c.flag + ' ' : '';
-    opt.textContent = `${flag}${c.name} (${c.en})`;
+    opt.textContent = `${c.name} (${c.en})`;
     sel.appendChild(opt);
   }
   sel.value = localStorage.getItem('addr_country') || 'US';
@@ -101,7 +100,7 @@ function initCountryPills() {
     const btn = document.createElement('button');
     btn.className = `country-pill ${code === currentCode ? 'active' : ''}`;
     btn.dataset.code = code;
-    btn.innerHTML = `<span>${c.flag || ''}</span> <span>${c.name}</span>`;
+    btn.innerHTML = `${flagImg(code)} <span>${c.name}</span>`;
     btn.onclick = () => {
       document.getElementById('countrySelect').value = code;
       localStorage.setItem('addr_country', code);
@@ -142,6 +141,13 @@ function updateMapTiles(theme) {
 
 // ---------- 随机工具 ----------
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+// 图片国旗（emoji 国旗在 Windows 上只会显示为字母对，改用 flagcdn 小图）
+function flagImg(code) {
+  if (!code) return '';
+  const cc = (code === 'UK' ? 'gb' : code.toLowerCase());
+  return `<img class="flag-img" src="https://flagcdn.com/16x12/${cc}.png" srcset="https://flagcdn.com/32x24/${cc}.png 2x" width="16" height="12" alt="${code}">`;
+}
 
 function fillPhone(tpl) {
   return tpl.replace(/[#N]/g, ch =>
@@ -321,7 +327,7 @@ function renderResult() {
     { icon: ICONS.home, label: '街道门牌', val: r.line1 || '-', raw: r.line1 },
     { icon: ICONS.city, label: '城市 (City)', val: r.city || '-', raw: r.city },
     { icon: ICONS.postcode, label: '邮政编码', val: r.postcode || '-', raw: r.postcode },
-    { icon: ICONS.pin, label: '完整物理地址', val: `${r.flag ? r.flag + ' ' : ''}${r.address}`, raw: r.address, fullWidth: true },
+    { icon: ICONS.pin, label: '完整物理地址', val: r.address, raw: r.address, fullWidth: true },
     { icon: ICONS.pin, label: 'WGS84 坐标', val: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, raw: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, isMono: true, fullWidth: true },
   ];
 
@@ -506,7 +512,7 @@ function renderSaved() {
         </button>
       </td>
       <td><span class="note-tag">${esc(it.note || '-')}</span></td>
-      <td><span class="country-flag-cell">${it.flag || ''} ${esc(it.countryCode || '-')}</span></td>
+      <td><span class="country-flag-cell">${flagImg(it.countryCode)} ${esc(it.countryCode || '-')}</span></td>
       <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.name)}', true, '姓名')"><strong>${esc(it.name)}</strong></td>
       <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.phone)}', true, '电话')">${esc(it.phone)}</td>
       <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.address)}', true, '地址')" title="${esc(it.address)}">${esc(it.address)}</td>

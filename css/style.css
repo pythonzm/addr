@@ -890,3 +890,6 @@ td.cell-copyable:hover {
 }
 
 .hidden { display: none !important; }
+
+/* 图片国旗（替代 emoji，Windows 下 emoji 国旗只显示字母对） */
+.flag-img { border-radius: 2px; vertical-align: -1px; box-shadow: 0 0 0 1px var(--card-border); }
