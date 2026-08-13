@@ -49,7 +49,15 @@ data/pool/*.json    各国离线地址池（真实 OSM 门牌地址）
 
 ## 添加新国家
 
-在 `js/data.js` 的 `COUNTRIES` 中新增一项即可，需提供：中文名/英文名、`fmt` 地址格式、主要城市中心坐标与随机半径、姓名池、手机号模板。注意所选国家在 OSM 上需有较好的门牌号覆盖（例如中国大陆的 OSM 门牌数据很稀疏，故未收录）。
+一条命令自动完成（国家名/区号/语言 ← mledoze/countries 数据集；主要城市及坐标 ← Overpass 按人口选取；随后自动抽取地址池并报告 OSM 门牌覆盖度）：
+
+```powershell
+node tools/add-country.js VN          # 添加越南（ISO 3166-1 两位代码）
+node tools/add-country.js TH 5       # 添加泰国，取人口最多的 5 个城市
+node tools/add-country.js RO --no-pool  # 只写入 data.js，不抽地址池
+```
+
+唯一无法自动化的是姓名池与手机号段：脚本会先填入通用占位（带注释标记），建议在 `js/data.js` 中按当地习惯完善。若抽取结果少于 500 条，说明该国/地区 OSM 门牌覆盖差（如中国大陆），会给出警告供你决定是否保留。
 
 ## 注意事项
 

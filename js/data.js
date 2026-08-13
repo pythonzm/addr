@@ -172,6 +172,14 @@ const COUNTRIES = {
     f: ['Helena', 'Alice', 'Laura', 'Maria', 'Valentina', 'Heloísa', 'Júlia', 'Lívia'],
     l: ['Silva', 'Santos', 'Oliveira', 'Souza', 'Lima', 'Pereira', 'Costa', 'Almeida'],
   },
+  VN: { // 由 add-country.js 自动生成；姓名池为通用占位，建议按当地习惯完善
+    name: '越南', en: 'Vietnam', lang: 'vi', fmt: 'SN',
+    cities: [['Thành phố Hồ Chí Minh', 10.77, 106.72, 0.07], ['Hà Nội', 21.03, 105.85, 0.07], ['Đồng Nai', 10.92, 106.85, 0.05], ['Hải Phòng', 20.88, 106.68, 0.05]],
+    phones: ['+84 90 ### ####', '+84 91 ### ####', '+84 96 ### ####', '+84 98 ### ####'],
+    m: ['Minh', 'Hùng', 'Duy', 'Quang', 'Anh Tuấn', 'Đức', 'Hoàng', 'Nam'],
+    f: ['Linh', 'Hương', 'Thảo', 'Ngọc', 'Trang', 'Hà', 'Mai', 'Phương'],
+    l: ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];
