@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>后台管理 · 真实地址生成器</title>
+  <style>
+    :root {
+      --bg: #0B0F19; --card: #121A2B; --border: rgba(255,255,255,.08);
+      --text: #F3F4F6; --muted: #9CA3AF; --primary: #0EA5E9; --ok: #10B981; --bad: #EF4444; --warn: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .sub { color: var(--muted); font-size: .85rem; margin-bottom: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+    .card h2 { font-size: 1rem; margin-bottom: 12px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: .88rem; }
+    button:hover { filter: brightness(1.15); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    button.gray { background: #334155; }
+    button.green { background: var(--ok); }
+    button.small { padding: 4px 10px; font-size: .8rem; }
+    input { background: #0B0F19; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: .9rem; }
+    input#ccode { width: 90px; text-transform: uppercase; }
+    input#ccities { width: 70px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    .num { font-variant-numeric: tabular-nums; }
+    .tag { padding: 2px 8px; border-radius: 999px; font-size: .75rem; }
+    .tag.ok { background: rgba(16,185,129,.15); color: var(--ok); }
+    .tag.warn { background: rgba(245,158,11,.15); color: var(--warn); }
+    .tag.bad { background: rgba(239,68,68,.15); color: var(--bad); }
+    #log { background: #05080F; border: 1px solid var(--border); border-radius: 8px; padding: 12px; height: 260px; overflow-y: auto; font-family: Consolas, monospace; font-size: .78rem; white-space: pre-wrap; color: #A7F3D0; }
+    #jobbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: .85rem; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.running { background: var(--warn); animation: blink 1s infinite; }
+    .dot.done { background: var(--ok); }
+    .dot.failed { background: var(--bad); }
+    @keyframes blink { 50% { opacity: .3; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>后台管理</h1>
+    <p class="sub">重建地址池 / 添加国家 / 发布到 GitHub（本面板仅本机可访问）</p>
+
+    <div class="card">
+      <h2>任务</h2>
+      <div id="jobbar"><span class="dot" id="jobdot"></span><span id="jobname">暂无任务</span></div>
+      <div id="log">（任务日志将显示在这里）</div>
+    </div>
+
+    <div class="card">
+      <h2>添加新国家</h2>
+      <div class="row">
+        <input id="ccode" placeholder="如 TH" maxlength="2">
+        <input id="ccities" type="number" value="4" min="1" max="8" title="城市数">
+        <button onclick="addCountry()">自动添加并抽取地址池</button>
+        <span class="sub" style="margin:0">ISO 3166-1 两位代码；完成后记得在 data.js 完善姓名池，再发布</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>地址池 <span class="sub" id="summary" style="margin:0"></span></h2>
+      <div class="row" style="margin-bottom:12px">
+        <button onclick="rebuild([])">重建全部</button>
+        <button class="green" onclick="publish()">发布到远端（git push）</button>
+      </div>
+      <table>
+        <thead><tr><th>代码</th><th>国家/地区</th><th>城市</th><th>条数</th><th>生成日期</th><th>操作</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let logOffset = 0;
+    let lastJobStatus = null;
+
+    async function api(path, opts) {
+      const r = await fetch(path, opts);
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      return j;
+    }
+
+    async function refreshStatus() {
+      const s = await api('/api/status');
+      const tb = document.getElementById('tbody');
+      tb.innerHTML = s.countries.map(c => {
+        const pool = c.pool
+          ? `<span class="tag ${c.pool.count < 800 ? 'warn' : 'ok'}">${c.pool.count}</span>`
+          : '<span class="tag bad">无</span>';
+        return `<tr>
+          <td>${c.code}</td><td>${c.name} (${c.en})</td>
+          <td class="sub" style="margin:0">${c.cities.join('、')}</td>
+          <td class="num">${pool}</td>
+          <td class="num">${c.pool ? c.pool.generated : '-'}</td>
+          <td><button class="small gray" onclick="rebuild(['${c.code}'])">重建</button></td>
+        </tr>`;
+      }).join('');
+      const total = s.countries.reduce((n, c) => n + (c.pool ? c.pool.count : 0), 0);
+      document.getElementById('summary').textContent = `共 ${s.countries.length} 国 / ${total.toLocaleString()} 条`;
+    }
+
+    async function pollJob() {
+      try {
+        const { job } = await api('/api/job?from=' + logOffset);
+        const dot = document.getElementById('jobdot');
+        if (!job) { requestAnimationFrame(() => setTimeout(pollJob, 1500)); return; }
+        document.getElementById('jobname').textContent = `${job.name} · ${job.started} · ${{ running: '运行中', done: '已完成', failed: '失败' }[job.status]}`;
+        dot.className = 'dot ' + job.status;
+        if (job.logs.length) {
+          const el = document.getElementById('log');
+          if (logOffset === 0) el.textContent = '';
+          el.textContent += job.logs.join('\n') + '\n';
+          el.scrollTop = el.scrollHeight;
+          logOffset = job.total;
+        }
+        if (job.status !== 'running' && lastJobStatus === 'running') refreshStatus();
+        lastJobStatus = job.status;
+      } catch (e) { /* 服务重启等瞬时错误，忽略 */ }
+      setTimeout(pollJob, 1500);
+    }
+
+    async function run(path, body, confirmMsg) {
+      if (confirmMsg && !confirm(confirmMsg)) return;
+      logOffset = 0;
+      try { await api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
+      catch (e) { alert(e.message); }
+    }
+
+    const rebuild = codes => run('/api/build-pool', codes.length ? { codes } : { all: true },
+      codes.length ? `重建 ${codes.join(' ')} 的地址池？（每国约 2-5 分钟）` : '重建全部国家地址池？（约 1 小时）');
+    const publish = () => run('/api/publish', {}, '提交所有变更并推送到 GitHub？（Pages 会自动重新部署）');
+    function addCountry() {
+      const code = document.getElementById('ccode').value.trim().toUpperCase();
+      const cities = document.getElementById('ccities').value;
+      if (!/^[A-Z]{2}$/.test(code)) return alert('请输入两位国家代码，如 TH');
+      run('/api/add-country', { code, cities });
+    }
+
+    refreshStatus();
+    pollJob();
+  </script>
+</body>
+</html>
