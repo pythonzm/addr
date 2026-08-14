@@ -127,16 +127,15 @@ function initMap() {
 }
 
 function updateMapTiles(theme) {
-  if (currentTileLayer) map.removeLayer(currentTileLayer);
-  
-  const tileUrl = theme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-  currentTileLayer = L.tileLayer(tileUrl, {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 贡献者',
-  }).addTo(map);
+  // 统一使用 OSM 官方瓦片（CartoCDN 在部分网络下间歇性不可达）；
+  // 暗色主题通过 CSS 滤镜反色实现，见 style.css 的 .map-dark 规则
+  if (!currentTileLayer) {
+    currentTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 贡献者',
+    }).addTo(map);
+  }
+  document.getElementById('map').classList.toggle('map-dark', theme === 'dark');
 }
 
 // ---------- 随机工具 ----------
