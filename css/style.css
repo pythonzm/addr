@@ -94,12 +94,14 @@ body {
   padding: 16px 0 24px 0;
   border-bottom: 1px solid var(--card-border);
   margin-bottom: 24px;
+  gap: 16px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .brand-icon {
@@ -112,6 +114,11 @@ body {
   justify-content: center;
   color: #fff;
   box-shadow: var(--glow-primary);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  min-width: 0;
 }
 
 .brand-text h1 {
@@ -125,6 +132,17 @@ body {
   gap: 8px;
 }
 
+.brand-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .brand-text p {
   font-size: 0.82rem;
   color: var(--text-secondary);
@@ -134,6 +152,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* ---------- Stat Badges & Hero Info ---------- */
@@ -934,29 +953,50 @@ td.cell-copyable:hover {
   .navbar {
     padding: 10px 0 14px 0;
     margin-bottom: 14px;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
 
   .brand {
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
   }
 
   .brand-icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
     border-radius: var(--radius-sm);
   }
 
   .brand-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .brand-text {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
   }
 
   .brand-text h1 {
-    font-size: 1.12rem;
-    flex-wrap: wrap;
+    font-size: 1.02rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
     gap: 4px;
+  }
+
+  .brand-badge {
+    font-size: 0.62rem;
+    padding: 1px 5px;
   }
 
   .brand-text p {
@@ -965,14 +1005,33 @@ td.cell-copyable:hover {
 
   .nav-actions {
     gap: 6px;
-    flex-wrap: wrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
   }
 
   .lang-select {
-    padding: 6px 8px;
-    font-size: 0.8rem !important;
-    min-height: 38px;
+    padding: 4px 6px;
+    font-size: 0.78rem !important;
+    height: 36px;
+    min-height: 36px;
     border-radius: var(--radius-md);
+    max-width: 100px;
+  }
+
+  .nav-actions .btn-secondary {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .nav-actions .btn-secondary span[data-i18n="btn_shortcuts"] {
+    display: none;
   }
 
   .hero-banner {
