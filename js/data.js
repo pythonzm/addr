@@ -191,6 +191,17 @@ const COUNTRIES = {
     fr: ['kayan', 'wingkei', 'meiling', 'sukyee', 'tszyu', 'hiutung', 'ngaman', 'szewing'],
     lr: ['chan', 'wong', 'lee', 'cheung', 'lau', 'leung', 'ng', 'chau'],
   },
+  TH: {
+    name: '泰国', en: 'Thailand', lang: 'th', fmt: 'NS',
+    cities: [['Bangkok', 13.75, 100.49, 0.07], ['Nonthaburi', 13.84, 100.49, 0.03], ['Phra Pradaeng', 13.66, 100.53, 0.03], ['Pak Kret', 13.91, 100.50, 0.03]],
+    phones: ['+66 8# ### ####', '+66 9# ### ####', '+66 6# ### ####'],
+    m: ['สมชาย', 'สมศักดิ์', 'วิชัย', 'ประเสริฐ', 'อานนท์', 'ณัฐพล', 'ธนกร', 'กิตติศักดิ์'],
+    f: ['มาลี', 'สุดา', 'นภา', 'พรทิพย์', 'วิภา', 'ศิริพร', 'กัญญา', 'อรุณี'],
+    l: ['ใจดี', 'สุขสวัสดิ์', 'วงศ์สวัสดิ์', 'ศรีสุข', 'บุญมี', 'ทองดี', 'รัตนกุล', 'พงศ์พันธ์'],
+    mr: ['somchai', 'somsak', 'wichai', 'prasert', 'anon', 'nattapon', 'thanakorn', 'kittisak'],
+    fr: ['malee', 'suda', 'napa', 'porntip', 'wipa', 'siriporn', 'kanya', 'arunee'],
+    lr: ['jaidee', 'suksawat', 'wongsawat', 'srisuk', 'boonmee', 'thongdee', 'rattanakul', 'pongpan'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];

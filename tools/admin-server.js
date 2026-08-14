@@ -224,9 +224,11 @@ const server = http.createServer(async (req, res) => {
   }
   if (req.method === 'POST' && url.pathname === '/api/add-country') {
     const { code, cities } = await readBody(req);
-    if (!/^[A-Z]{2}$/.test(code || '')) return send(res, 400, { error: '国家代码须为两位大写字母' });
+    // 支持代码/中文名/英文名，由 add-country.js 负责解析与歧义提示
+    const query = String(code || '').trim();
+    if (!query || query.length > 50 || /[\r\n"'\\]/.test(query)) return send(res, 400, { error: '请输入国家代码或名称（如 TH / 泰国 / Thailand）' });
     const n = Math.min(Math.max(parseInt(cities, 10) || 4, 1), 8);
-    return startJob(`添加国家: ${code}`, process.execPath, [path.join('tools', 'add-country.js'), code, String(n)], res);
+    return startJob(`添加国家: ${query}`, process.execPath, [path.join('tools', 'add-country.js'), query, String(n)], res);
   }
   if (req.method === 'POST' && url.pathname === '/api/publish') {
     return publish(res);

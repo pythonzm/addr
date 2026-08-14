@@ -24,7 +24,7 @@
     button.green { background: var(--ok); }
     button.small { padding: 4px 10px; font-size: .8rem; }
     input { background: #0B0F19; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: .9rem; }
-    input#ccode { width: 90px; text-transform: uppercase; }
+    input#ccode { width: 200px; }
     input#ccities { width: 70px; }
     table { width: 100%; border-collapse: collapse; font-size: .86rem; }
     th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
@@ -60,10 +60,10 @@
     <div class="card">
       <h2>添加新国家</h2>
       <div class="row">
-        <input id="ccode" placeholder="如 TH" maxlength="2">
+        <input id="ccode" placeholder="代码或名称，如 TH / 泰国 / Thailand">
         <input id="ccities" type="number" value="4" min="1" max="8" title="城市数">
         <button onclick="addCountry()">自动添加并抽取地址池</button>
-        <span class="sub" style="margin:0">ISO 3166-1 两位代码；完成后记得在 data.js 完善姓名池，再发布</span>
+        <span class="sub" style="margin:0">支持两位代码、中文名或英文名；完成后记得在 data.js 完善姓名池，再发布</span>
       </div>
     </div>
 
@@ -148,9 +148,9 @@
       codes.length ? `重建 ${codes.join(' ')} 的地址池？（每国约 2-5 分钟）` : '重建全部国家地址池？（约 1 小时）');
     const publish = () => run('/api/publish', {}, '提交所有变更并推送到 GitHub？（Pages 会自动重新部署）');
     function addCountry() {
-      const code = document.getElementById('ccode').value.trim().toUpperCase();
+      const code = document.getElementById('ccode').value.trim();
       const cities = document.getElementById('ccities').value;
-      if (!/^[A-Z]{2}$/.test(code)) return alert('请输入两位国家代码，如 TH');
+      if (!code) return alert('请输入国家代码或名称，如 TH / 泰国 / Thailand');
       run('/api/add-country', { code, cities });
     }
 

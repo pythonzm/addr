@@ -1,6 +1,6 @@
 // 一键添加新国家：自动获取国家信息、主要城市坐标，生成 data.js 条目并抽取地址池。
-// 用法：node tools/add-country.js <ISO2代码> [城市数=4] [--no-pool]
-// 例如：node tools/add-country.js VN
+// 用法：node tools/add-country.js <国家> [城市数=4] [--no-pool]
+// <国家> 支持：两位/三位代码、中文名、英文名或别名，如 VN / 越南 / Vietnam / 泰国 / Thailand
 // 姓名池无法可靠自动化，默认填入通用占位池（可在 data.js 中手动完善）。
 
 const fs = require('fs');
@@ -53,7 +53,7 @@ async function overpassCities(iso, count) {
   }
   if (!els) throw lastErr;
   const cities = els
-    .map(el => ({ name: el.tags.name, lat: el.lat, lng: el.lon, pop: parseInt(String(el.tags.population).replace(/\D/g, ''), 10) || 0 }))
+    .map(el => ({ name: el.tags['name:en'] || el.tags.name, lat: el.lat, lng: el.lon, pop: parseInt(String(el.tags.population).replace(/\D/g, ''), 10) || 0 }))
     .filter(c => c.name && c.pop > 0)
     .sort((a, b) => b.pop - a.pop);
   // 去掉重名（同城多节点取人口最大的）
@@ -69,25 +69,47 @@ function radiusFor(pop) {
   return 0.03;
 }
 
+// 按代码/中文名/英文名/别名解析国家；返回匹配数组
+function resolveCountry(all, query) {
+  const q = String(query).trim().toLowerCase();
+  const norm = v => String(v || '').toLowerCase();
+  const fields = c => [c.cca2, c.cca3, c.name?.common, c.name?.official, c.translations?.zho?.common, c.translations?.zho?.official, ...(c.altSpellings || [])];
+  let hit = all.filter(c => fields(c).some(v => norm(v) === q));
+  if (!hit.length) hit = all.filter(c => fields(c).some(v => norm(v).startsWith(q)));
+  if (!hit.length) hit = all.filter(c => fields(c).some(v => norm(v).includes(q)));
+  return hit;
+}
+
 (async () => {
   const args = process.argv.slice(2).filter(a => a !== '--no-pool');
   const noPool = process.argv.includes('--no-pool');
-  const code = (args[0] || '').toUpperCase();
+  const query = (args[0] || '').trim();
   const cityCount = parseInt(args[1], 10) || 4;
-  if (!/^[A-Z]{2}$/.test(code)) {
-    console.log('用法: node tools/add-country.js <ISO2代码> [城市数=4] [--no-pool]');
+  if (!query) {
+    console.log('用法: node tools/add-country.js <国家：代码/中文名/英文名> [城市数=4] [--no-pool]');
     process.exit(1);
   }
-  if (COUNTRIES[code]) {
-    console.log(`${code} 已存在于 data.js，无需添加`);
-    process.exit(1);
-  }
-  const iso = code === 'UK' ? 'GB' : code;
 
-  console.log(`[1/4] 获取 ${iso} 国家信息（mledoze/countries 数据集）…`);
+  console.log(`[1/4] 解析国家「${query}」（mledoze/countries 数据集）…`);
   const all = await fetchJson('https://raw.githubusercontent.com/mledoze/countries/master/countries.json');
-  const info = all.find(c => c.cca2 === iso);
-  if (!info) { console.log(`  数据集中未找到 ${iso}`); process.exit(1); }
+  const matches = resolveCountry(all, query);
+  if (!matches.length) {
+    console.log('  未匹配到任何国家/地区，请检查拼写');
+    process.exit(1);
+  }
+  if (matches.length > 1) {
+    console.log('  匹配到多个，请用更精确的名称或代码重试：');
+    matches.slice(0, 8).forEach(c => console.log(`    ${c.translations?.zho?.common || c.name.common} (${c.name.common}, ${c.cca2})`));
+    process.exit(1);
+  }
+  const info = matches[0];
+  // 数据键沿用现有约定：英国用 UK（而非 ISO 的 GB）
+  const code = info.cca2 === 'GB' ? 'UK' : info.cca2;
+  const iso = info.cca2;
+  if (COUNTRIES[code]) {
+    console.log(`  ${info.translations?.zho?.common || info.name.common} (${code}) 已存在于 data.js，无需添加`);
+    process.exit(1);
+  }
   const en = info.name.common;
   const zh = info.translations?.zho?.common || en;
   const calling = (info.idd?.root || '') + (info.idd?.suffixes?.length === 1 ? info.idd.suffixes[0] : '');
