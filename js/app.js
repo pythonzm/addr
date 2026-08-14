@@ -77,7 +77,7 @@ function fillCountrySelect() {
   for (const [code, c] of Object.entries(COUNTRIES)) {
     const opt = document.createElement('option');
     opt.value = code;
-    opt.textContent = LANG === 'en' ? c.en : `${c.name} (${c.en})`;
+    opt.textContent = (LANG === 'zh-CN' || LANG === 'zh-TW') ? `${c.name} (${c.en})` : c.en;
     sel.appendChild(opt);
   }
   sel.value = keep;
