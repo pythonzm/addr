@@ -1140,3 +1140,15 @@ td.cell-copyable:hover {
 
 /* 暗色主题地图：对 OSM 瓦片做反色滤镜，替代不稳定的 Carto 暗色瓦片源 */
 .map-dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+
+/* 语言切换器（导航栏） */
+.lang-select {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--field-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+.lang-select:hover { background: var(--card-hover); }

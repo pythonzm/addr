@@ -70,16 +70,22 @@ function updateThemeIcon(theme) {
 }
 
 // ---------- 国家选择器 & Pill 标签 ----------
-function initCountrySelector() {
+function fillCountrySelect() {
   const sel = document.getElementById('countrySelect');
+  const keep = sel.value || localStorage.getItem('addr_country') || 'US';
   sel.innerHTML = '';
   for (const [code, c] of Object.entries(COUNTRIES)) {
     const opt = document.createElement('option');
     opt.value = code;
-    opt.textContent = `${c.name} (${c.en})`;
+    opt.textContent = LANG === 'en' ? c.en : `${c.name} (${c.en})`;
     sel.appendChild(opt);
   }
-  sel.value = localStorage.getItem('addr_country') || 'US';
+  sel.value = keep;
+}
+
+function initCountrySelector() {
+  fillCountrySelect();
+  const sel = document.getElementById('countrySelect');
   sel.addEventListener('change', () => {
     localStorage.setItem('addr_country', sel.value);
     highlightPill(sel.value);
@@ -100,7 +106,7 @@ function initCountryPills() {
     const btn = document.createElement('button');
     btn.className = `country-pill ${code === currentCode ? 'active' : ''}`;
     btn.dataset.code = code;
-    btn.innerHTML = `${flagImg(code)} <span>${c.name}</span>`;
+    btn.innerHTML = `${flagImg(code)} <span>${countryDisplayName(c)}</span>`;
     btn.onclick = () => {
       document.getElementById('countrySelect').value = code;
       localStorage.setItem('addr_country', code);
@@ -132,7 +138,7 @@ function updateMapTiles(theme) {
   if (!currentTileLayer) {
     currentTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 贡献者',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
   }
   document.getElementById('map').classList.toggle('map-dark', theme === 'dark');
@@ -165,8 +171,11 @@ function makePerson(c) {
   const romanLast = cjk ? c.lr[lidx] : last.toLowerCase();
   const clean = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
   const email = `${clean(romanFirst)}${clean(romanLast)}${Math.floor(Math.random() * 900) + 100}@${pick(EMAIL_DOMAINS)}`;
-  return { name, gender: isMale ? '男' : '女', email, phone: fillPhone(pick(c.phones)) };
+  return { name, gender: isMale ? 'male' : 'female', email, phone: fillPhone(pick(c.phones)) };
 }
+
+// 性别显示文本；兼容旧保存记录中的"男/女"字面值
+const genderText = g => g === 'male' ? t('gender_male') : g === 'female' ? t('gender_female') : (g || '-');
 
 // ---------- 从 OSM 获取真实地址 ----------
 const poolCache = {};
@@ -194,7 +203,7 @@ async function overpassQuery(bbox, limit) {
       lastErr = e;
     }
   }
-  throw lastErr || new Error('Overpass 不可用');
+  throw lastErr || new Error(t('toast_gen_fail'));
 }
 
 function randomBBox(city, half) {
@@ -238,7 +247,7 @@ function formatLine1(fmt, street, num) {
 async function generate() {
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
-  document.getElementById('genText').textContent = '获取中…';
+  document.getElementById('genText').textContent = t('btn_generating');
   document.getElementById('spinner').classList.remove('hidden');
 
   try {
@@ -250,10 +259,10 @@ async function generate() {
       : await fromLive(code, c);
     renderResult();
   } catch (e) {
-    toast(e.message || '获取失败，请重试', true);
+    toast(e.message || t('toast_gen_fail'), true);
   } finally {
     btn.disabled = false;
-    document.getElementById('genText').textContent = '换一个地址';
+    document.getElementById('genText').textContent = t('btn_generate');
     document.getElementById('spinner').classList.add('hidden');
   }
 }
@@ -275,7 +284,7 @@ function fromPool(code, c, pool) {
 // 模式二：Overpass 实时查询
 async function fromLive(code, c) {
   const hit = await findElement(c);
-  if (!hit) throw new Error('该区域暂未取到带门牌的地址，请再试一次');
+  if (!hit) throw new Error(t('err_no_addr'));
 
   const { el, cityName } = hit;
   const tags = el.tags || {};
@@ -319,15 +328,15 @@ function renderResult() {
   if (!r) return;
 
   const fields = [
-    { icon: ICONS.user, label: '姓名 (Name)', val: r.name, raw: r.name },
-    { icon: ICONS.gender, label: '性别 (Gender)', val: r.gender, raw: r.gender },
-    { icon: ICONS.phone, label: '电话号码', val: r.phone, raw: r.phone },
-    { icon: ICONS.mail, label: '电子邮箱', val: r.email, raw: r.email },
-    { icon: ICONS.home, label: '街道门牌', val: r.line1 || '-', raw: r.line1 },
-    { icon: ICONS.city, label: '城市 (City)', val: r.city || '-', raw: r.city },
-    { icon: ICONS.postcode, label: '邮政编码', val: r.postcode || '-', raw: r.postcode },
-    { icon: ICONS.pin, label: '完整物理地址', val: r.address, raw: r.address, fullWidth: true },
-    { icon: ICONS.pin, label: 'WGS84 坐标', val: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, raw: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, isMono: true, fullWidth: true },
+    { icon: ICONS.user, label: t('f_name'), val: r.name, raw: r.name },
+    { icon: ICONS.gender, label: t('f_gender'), val: genderText(r.gender), raw: genderText(r.gender) },
+    { icon: ICONS.phone, label: t('f_phone'), val: r.phone, raw: r.phone },
+    { icon: ICONS.mail, label: t('f_email'), val: r.email, raw: r.email },
+    { icon: ICONS.home, label: t('f_street'), val: r.line1 || '-', raw: r.line1 },
+    { icon: ICONS.city, label: t('f_city'), val: r.city || '-', raw: r.city },
+    { icon: ICONS.postcode, label: t('f_postcode'), val: r.postcode || '-', raw: r.postcode },
+    { icon: ICONS.pin, label: t('f_address'), val: r.address, raw: r.address, fullWidth: true },
+    { icon: ICONS.pin, label: t('f_coords'), val: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, raw: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, isMono: true, fullWidth: true },
   ];
 
   document.getElementById('result').innerHTML = fields.map(f => `
@@ -335,7 +344,7 @@ function renderResult() {
       <div class="field-icon">${f.icon}</div>
       <div class="field-label">${f.label}</div>
       <div class="field-value ${f.isMono ? 'mono' : ''}">${esc(f.val)}</div>
-      <div class="field-copy-btn" title="点击复制">${ICONS.copy}</div>
+      <div class="field-copy-btn" title="${esc(t('title_copy'))}">${ICONS.copy}</div>
     </div>
   `).join('');
 
@@ -343,7 +352,7 @@ function renderResult() {
   const badge = document.getElementById('qualityBadge');
   if (badge) {
     badge.className = 'status-badge';
-    badge.innerHTML = `<span class="status-pulse"></span> ${r.source === 'pool' ? '门牌级 · 本地地址池 (OSM)' : '门牌级 · OSM 实时抓取'}`;
+    badge.innerHTML = `<span class="status-pulse"></span> ${r.source === 'pool' ? t('badge_pool') : t('badge_live')}`;
   }
 
   // 证明链接
@@ -353,14 +362,14 @@ function renderResult() {
       <div class="proof-links">
         <a href="${esc(r.osmUrl)}" target="_blank" rel="noopener">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          在 OpenStreetMap 验证建筑
+          ${esc(t('proof_verify'))}
         </a>
         <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" rel="noopener">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/></svg>
           Google Maps
         </a>
       </div>
-      <div>地图数据 © OpenStreetMap 贡献者</div>
+      <div>${esc(t('proof_map_copyright'))}</div>
     `;
   }
 
@@ -385,10 +394,10 @@ function renderResult() {
 }
 
 // ---------- 快捷复制多格式 ----------
-function copyText(encoded, isEncoded, label = '内容') {
+function copyText(encoded, isEncoded, label = null) {
   const text = isEncoded ? decodeURIComponent(encoded) : encoded;
-  const done = () => toast(`已复制 ${label}`);
-  const fail = () => toast('复制失败', true);
+  const done = () => toast(t('toast_copied').replace('{x}', label || t('copy_content')));
+  const fail = () => toast(t('toast_copy_fail'), true);
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(done).catch(fail);
   } else {
@@ -402,34 +411,34 @@ function copyText(encoded, isEncoded, label = '内容') {
 }
 
 function copyAll() {
-  if (!current) return toast('请先生成地址', true);
+  if (!current) return toast(t('toast_generate_first'), true);
   const r = current;
   const text = [
-    `姓名: ${r.name}`,
-    `性别: ${r.gender}`,
-    `电话: ${r.phone}`,
-    `邮箱: ${r.email}`,
-    `地址: ${r.address}`,
-    `坐标: ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`,
-    `验证: ${r.osmUrl}`
+    `${t('lbl_name')}: ${r.name}`,
+    `${t('f_gender')}: ${genderText(r.gender)}`,
+    `${t('lbl_phone')}: ${r.phone}`,
+    `${t('f_email')}: ${r.email}`,
+    `${t('lbl_address')}: ${r.address}`,
+    `${t('f_coords')}: ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`,
+    `OSM: ${r.osmUrl}`
   ].join('\n');
-  copyText(text, false, '全套地址信息');
+  copyText(text, false, t('copy_all_label'));
 }
 
 function copyJSON() {
-  if (!current) return toast('请先生成地址', true);
-  copyText(JSON.stringify(current, null, 2), false, 'JSON 数据');
+  if (!current) return toast(t('toast_generate_first'), true);
+  copyText(JSON.stringify(current, null, 2), false, t('copy_json_label'));
 }
 
 function copyCoordinates() {
-  if (!current) return toast('请先生成地址', true);
-  copyText(`${current.lat.toFixed(6)}, ${current.lng.toFixed(6)}`, false, '经纬度坐标');
+  if (!current) return toast(t('toast_generate_first'), true);
+  copyText(`${current.lat.toFixed(6)}, ${current.lng.toFixed(6)}`, false, t('copy_coords_label'));
 }
 
 function centerMap() {
   if (current && map) {
     map.setView([current.lat, current.lng], 16);
-    toast('已重置地图焦点');
+    toast(t('toast_recenter'));
   }
 }
 
@@ -442,13 +451,13 @@ function getSaved() {
 }
 
 function saveCurrent() {
-  if (!current) return toast('请先生成地址', true);
-  const note = prompt('给该地址添加备注（可选）：') ?? '';
+  if (!current) return toast(t('toast_generate_first'), true);
+  const note = prompt(t('prompt_note')) ?? '';
   const list = getSaved();
   list.unshift({ note, ...current, time: new Date().toLocaleString() });
   localStorage.setItem('addr_saved', JSON.stringify(list));
   renderSaved();
-  toast('已成功保存地址');
+  toast(t('toast_saved'));
 }
 
 function delSaved(idx) {
@@ -456,15 +465,15 @@ function delSaved(idx) {
   list.splice(idx, 1);
   localStorage.setItem('addr_saved', JSON.stringify(list));
   renderSaved();
-  toast('已删除条目');
+  toast(t('toast_deleted'));
 }
 
 function clearAll() {
   if (!getSaved().length) return;
-  if (confirm('确定要清空所有已保存的地址记录吗？')) {
+  if (confirm(t('confirm_clear'))) {
     localStorage.removeItem('addr_saved');
     renderSaved();
-    toast('所有记录已清空');
+    toast(t('toast_cleared'));
   }
 }
 
@@ -497,7 +506,7 @@ function renderSaved() {
   if (!filtered.length) {
     body.innerHTML = `<tr><td colspan="7" class="empty-state">
       <div class="empty-icon">📂</div>
-      <div>${list.length ? '没有匹配的搜索结果' : '暂无保存的地址数据，点击"保存当前"进行添加'}</div>
+      <div>${esc(list.length ? t('no_search_result') : t('no_saved'))}</div>
     </td></tr>`;
     return;
   }
@@ -505,16 +514,16 @@ function renderSaved() {
   body.innerHTML = filtered.map((it, i) => `
     <tr>
       <td>
-        <button class="btn btn-danger btn-ghost" style="padding:4px 8px;" onclick="delSaved(${i})" title="删除此记录">
+        <button class="btn btn-danger btn-ghost" style="padding:4px 8px;" onclick="delSaved(${i})" title="${esc(t('title_delete'))}">
           ${ICONS.copy.replace('rect', 'path')}
-          删除
+          ${esc(t('btn_delete'))}
         </button>
       </td>
       <td><span class="note-tag">${esc(it.note || '-')}</span></td>
       <td><span class="country-flag-cell">${flagImg(it.countryCode)} ${esc(it.countryCode || '-')}</span></td>
-      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.name)}', true, '姓名')"><strong>${esc(it.name)}</strong></td>
-      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.phone)}', true, '电话')">${esc(it.phone)}</td>
-      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.address)}', true, '地址')" title="${esc(it.address)}">${esc(it.address)}</td>
+      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.name)}', true, '${esc(t('lbl_name'))}')"><strong>${esc(it.name)}</strong></td>
+      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.phone)}', true, '${esc(t('lbl_phone'))}')">${esc(it.phone)}</td>
+      <td class="cell-copyable" onclick="copyText('${encodeURIComponent(it.address)}', true, '${esc(t('lbl_address'))}')" title="${esc(it.address)}">${esc(it.address)}</td>
       <td style="font-size:0.78rem;color:var(--text-muted);">${esc(it.time)}</td>
     </tr>
   `).join('');
@@ -533,22 +542,21 @@ function download(content, filename, type) {
 
 function exportCSV() {
   const list = getSaved();
-  if (!list.length) return toast('暂无保存数据可导出', true);
-  const headers = ['备注', '国家/地区', '姓名', '性别', '邮箱', '电话', '完整地址', '街道门牌', '城市', '邮编', '纬度', '经度', 'OSM链接', '保存时间'];
-  const rows = [headers.join(',')];
+  if (!list.length) return toast(t('toast_no_data'), true);
+  const rows = [t('csv_headers').join(',')];
   list.forEach(it => {
-    rows.push([it.note, it.country, it.name, it.gender, it.email, it.phone, it.address, it.line1, it.city, it.postcode, it.lat, it.lng, it.osmUrl, it.time]
+    rows.push([it.note, it.country, it.name, genderText(it.gender), it.email, it.phone, it.address, it.line1, it.city, it.postcode, it.lat, it.lng, it.osmUrl, it.time]
       .map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(','));
   });
   download('\uFEFF' + rows.join('\n'), `osm_addresses_${Date.now()}.csv`, 'text/csv;charset=utf-8');
-  toast('已成功导出 CSV 文件');
+  toast(t('toast_csv'));
 }
 
 function exportJSON() {
   const list = getSaved();
-  if (!list.length) return toast('暂无保存数据可导出', true);
+  if (!list.length) return toast(t('toast_no_data'), true);
   download(JSON.stringify(list, null, 2), `osm_addresses_${Date.now()}.json`, 'application/json');
-  toast('已成功导出 JSON 文件');
+  toast(t('toast_json'));
 }
 
 // ---------- Toast 通知 ----------
@@ -593,3 +601,12 @@ function toggleModal() {
   const modal = document.getElementById('shortcutModal');
   if (modal) modal.classList.toggle('active');
 }
+
+// ---------- 语言切换后重渲染动态内容（静态文案由 i18n.js applyI18n 处理） ----------
+window.onLangChange = () => {
+  fillCountrySelect();
+  initCountryPills();
+  highlightPill(document.getElementById('countrySelect').value);
+  if (current) renderResult();
+  renderSaved();
+};
