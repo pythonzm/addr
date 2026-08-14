@@ -16,7 +16,52 @@ node tools/admin-server.js
 # 打开 http://127.0.0.1:8100
 ```
 
-网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家、以及"发布到远端"（git add/commit/push，GitHub Pages 随之自动重新部署），任务日志实时显示。服务只绑定 127.0.0.1，仅本机可访问；同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
+网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家、以及"发布到远端"（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），任务日志实时显示。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
+
+**认证**：由 `ADMIN_PASSWORD` 环境变量控制——未设置时仅绑定 `127.0.0.1` 免密（本机模式）；设置后开启登录认证（会话 Cookie 12 小时滑动过期，同 IP 连错 5 次锁定 15 分钟），默认改绑 `0.0.0.0`，可用 `HOST` / `PORT` 覆盖。
+
+### 部署到 VPS
+
+```bash
+# 前置：VPS 安装 node ≥ 18 与 git，克隆仓库并配置好可推送的 SSH 密钥
+ADMIN_PASSWORD='你的强密码' node tools/admin-server.js
+```
+
+systemd 常驻示例（`/etc/systemd/system/addr-admin.service`）：
+
+```ini
+[Unit]
+Description=addr admin panel
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/addr
+Environment=ADMIN_PASSWORD=你的强密码
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/node tools/admin-server.js
+Restart=on-failure
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+公网访问务必套 HTTPS 反代（明文 HTTP 会暴露口令）。Nginx 示例：
+
+```nginx
+server {
+  listen 443 ssl;
+  server_name admin.example.com;
+  # ssl_certificate / ssl_certificate_key ...
+  location / {
+    proxy_pass http://127.0.0.1:8100;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto https;
+  }
+}
+```
+
+（上例中服务本身只绑 127.0.0.1，由 Nginx 对外；`X-Forwarded-Proto: https` 会让会话 Cookie 自动带 `Secure` 标记。）
 
 ## 更新 / 重建地址池（命令行）
 

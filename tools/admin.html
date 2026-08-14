@@ -45,8 +45,11 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>后台管理</h1>
-    <p class="sub">重建地址池 / 添加国家 / 发布到 GitHub（本面板仅本机可访问）</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <h1>后台管理</h1>
+      <button id="logoutBtn" class="gray" style="display:none;" onclick="logout()">退出登录</button>
+    </div>
+    <p class="sub">重建地址池 / 添加国家 / 发布到 GitHub（认证由 ADMIN_PASSWORD 环境变量控制）</p>
 
     <div class="card">
       <h2>任务</h2>
@@ -83,13 +86,20 @@
 
     async function api(path, opts) {
       const r = await fetch(path, opts);
+      if (r.status === 401) { location.reload(); throw new Error('未登录'); }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
       return j;
     }
 
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      location.reload();
+    }
+
     async function refreshStatus() {
       const s = await api('/api/status');
+      document.getElementById('logoutBtn').style.display = s.auth ? '' : 'none';
       const tb = document.getElementById('tbody');
       tb.innerHTML = s.countries.map(c => {
         const pool = c.pool
