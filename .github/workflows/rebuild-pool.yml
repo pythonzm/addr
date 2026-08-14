@@ -1,0 +1,60 @@
+name: 定期重建地址池
+
+on:
+  schedule:
+    - cron: '17 2 3 * *'   # 每月 3 日 02:17 UTC（欧洲凌晨，Overpass 低峰）；每次只重建当月轮值批次
+  workflow_dispatch:
+    inputs:
+      countries:
+        description: 国家代码（空格分隔，如 "JP SG"）；留空=本月轮值批次；all=全部
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-pool
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 确定重建范围（月度轮值 / 手动指定）
+        id: scope
+        env:
+          INPUT: ${{ inputs.countries }}
+        run: |
+          if [ "$INPUT" = "all" ]; then
+            CODES=""
+          elif [ -n "$INPUT" ]; then
+            CODES="$INPUT"
+          else
+            CODES=$(node -e "const C=Object.keys(new Function(require('fs').readFileSync('js/data.js','utf8')+';return COUNTRIES;')());const m=new Date().getUTCMonth()%6;const per=Math.ceil(C.length/6);console.log(C.slice(m*per,(m+1)*per).join(' '))")
+          fi
+          echo "codes=$CODES" >> "$GITHUB_OUTPUT"
+          echo "重建范围: ${CODES:-全部}"
+
+      - name: 重建地址池
+        run: node tools/build-pool.js ${{ steps.scope.outputs.codes }}
+
+      - name: 提交并推送
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/pool
+          if git diff --cached --quiet; then
+            echo "地址池无变化，跳过提交"
+          else
+            git commit -m "chore: 定期重建地址池（${{ steps.scope.outputs.codes || 'all' }}）"
+            git pull --rebase origin main
+            git push
+          fi
