@@ -898,6 +898,27 @@ td.cell-copyable:hover {
    📱 移动端与小屏专门优化 (Mobile Responsive Optimization)
    ========================================================================== */
 
+/* 语言切换器（导航栏） */
+.lang-select {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--field-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.lang-select:hover { background: var(--card-hover); border-color: var(--primary); }
+
+/* 暗色主题地图：对 OSM 瓦片做反色滤镜，替代不稳定的 Carto 暗色瓦片源 */
+.map-dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+
+/* ==========================================================================
+   📱 移动端与多语言专门优化 (Mobile Responsive Optimization for i18n)
+   ========================================================================== */
+
 /* 防止 iOS 点击输入框页面自动放大 */
 @media screen and (max-width: 768px) {
   select, input, button {
@@ -913,6 +934,8 @@ td.cell-copyable:hover {
   .navbar {
     padding: 10px 0 14px 0;
     margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .brand {
@@ -940,6 +963,18 @@ td.cell-copyable:hover {
     display: none;
   }
 
+  .nav-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .lang-select {
+    padding: 6px 8px;
+    font-size: 0.8rem !important;
+    min-height: 38px;
+    border-radius: var(--radius-md);
+  }
+
   .hero-banner {
     padding: 14px 14px;
     margin-bottom: 14px;
@@ -964,10 +999,11 @@ td.cell-copyable:hover {
   }
 
   .stat-item {
-    padding: 6px 4px;
+    padding: 8px 4px;
     flex-direction: column;
     text-align: center;
-    gap: 2px;
+    justify-content: center;
+    gap: 3px;
     border-radius: var(--radius-sm);
   }
 
@@ -980,10 +1016,10 @@ td.cell-copyable:hover {
   }
 
   .stat-lbl {
-    font-size: 0.65rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.66rem;
+    line-height: 1.25;
+    word-break: break-word;
+    color: var(--text-muted);
   }
 
   .card-controls {
@@ -1017,11 +1053,14 @@ td.cell-copyable:hover {
   }
 
   .btn {
-    padding: 10px 12px;
-    font-size: 0.88rem;
+    padding: 10px 8px;
+    font-size: 0.85rem;
     min-height: 44px;
     width: 100%;
     justify-content: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .kbd-hint {
@@ -1042,6 +1081,7 @@ td.cell-copyable:hover {
     padding-bottom: 10px;
     margin-bottom: 12px;
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   .card-head h2 {
@@ -1051,6 +1091,7 @@ td.cell-copyable:hover {
   .quick-copy-bar {
     width: 100%;
     justify-content: flex-end;
+    gap: 4px;
   }
 
   .fields-container {
@@ -1059,10 +1100,11 @@ td.cell-copyable:hover {
   }
 
   .field-card {
-    grid-template-columns: 26px 72px 1fr 24px;
+    grid-template-columns: 24px minmax(70px, auto) 1fr 24px;
     padding: 10px 10px;
     border-radius: var(--radius-md);
     min-height: 46px;
+    gap: 8px;
   }
 
   .field-card:active {
@@ -1077,6 +1119,8 @@ td.cell-copyable:hover {
 
   .field-label {
     font-size: 0.78rem;
+    line-height: 1.25;
+    word-break: break-word;
   }
 
   .field-value {
@@ -1118,6 +1162,7 @@ td.cell-copyable:hover {
 
   .table-container {
     border-radius: var(--radius-md);
+    -webkit-overflow-scrolling: touch;
   }
 
   th, td {
@@ -1137,18 +1182,3 @@ td.cell-copyable:hover {
     border-radius: var(--radius-lg);
   }
 }
-
-/* 暗色主题地图：对 OSM 瓦片做反色滤镜，替代不稳定的 Carto 暗色瓦片源 */
-.map-dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
-
-/* 语言切换器（导航栏） */
-.lang-select {
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: var(--field-bg);
-  color: var(--text-main);
-  cursor: pointer;
-}
-.lang-select:hover { background: var(--card-hover); }
