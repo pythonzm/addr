@@ -180,6 +180,17 @@ const COUNTRIES = {
     f: ['Linh', 'Hương', 'Thảo', 'Ngọc', 'Trang', 'Hà', 'Mai', 'Phương'],
     l: ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'],
   },
+  HK: {
+    name: '中国香港', en: 'Hong Kong', lang: 'en', fmt: 'NS',
+    cities: [['Hong Kong', 22.28, 114.16, 0.05], ['Kowloon', 22.32, 114.18, 0.04], ['Sha Tin', 22.38, 114.19, 0.03], ['Tuen Mun', 22.39, 113.97, 0.03]],
+    phones: ['+852 5### ####', '+852 6### ####', '+852 9### ####'],
+    m: ['志明', '家輝', '偉業', '俊傑', '國榮', '嘉豪', '子軒', '浩然'],
+    f: ['嘉欣', '詠琪', '美玲', '淑儀', '子瑜', '曉彤', '雅雯', '思穎'],
+    l: ['陳', '黃', '李', '張', '劉', '梁', '吳', '周'],
+    mr: ['chiming', 'kafai', 'waiyip', 'chunkit', 'kwokwing', 'kahou', 'tszhin', 'houyin'],
+    fr: ['kayan', 'wingkei', 'meiling', 'sukyee', 'tszyu', 'hiutung', 'ngaman', 'szewing'],
+    lr: ['chan', 'wong', 'lee', 'cheung', 'lau', 'leung', 'ng', 'chau'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];

@@ -12,7 +12,7 @@ const OVERPASS_ENDPOINTS = [
 ];
 
 // 常用推荐国家代码（用于快捷 Pill 按钮）
-const FEATURED_COUNTRIES = ['US', 'JP', 'GB', 'DE', 'KR', 'SG', 'AU', 'TW', 'FR', 'CA', 'VN'];
+const FEATURED_COUNTRIES = ['US', 'JP', 'UK', 'DE', 'KR', 'SG', 'AU', 'TW', 'HK', 'FR', 'CA', 'VN'];
 
 let current = null;
 let map = null;

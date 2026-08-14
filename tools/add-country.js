@@ -37,7 +37,8 @@ async function fetchJson(url, opts) {
 }
 
 async function overpassCities(iso, count) {
-  const q = `[out:json][timeout:60];area["ISO3166-1"="${iso}"][admin_level=2]->.a;(node["place"~"^(city|town)$"]["population"](area.a););out tags center 500;`;
+  // 不限定 admin_level：香港/澳门等特别行政区的边界关系不是 admin_level=2
+  const q = `[out:json][timeout:60];area["ISO3166-1"="${iso}"]->.a;(node["place"~"^(city|town)$"]["population"](area.a););out tags center 500;`;
   const endpoints = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
   let els = null, lastErr;
   for (const url of endpoints) {
@@ -96,15 +97,21 @@ function radiusFor(pop) {
   console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  地址格式 ${fmt}`);
 
   console.log(`[2/4] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
-  const cities = await overpassCities(iso, cityCount);
-  if (cities.length < 1) {
-    console.log('  未找到带人口标注的城市，无法自动添加，请手动编辑 data.js');
-    process.exit(1);
+  let cities = await overpassCities(iso, cityCount);
+  if (!cities.length) {
+    // 城邦/特别行政区常无带人口标注的 place 节点：退回用数据集中心坐标作单一城市
+    const [clat, clng] = info.latlng || [];
+    if (clat == null) {
+      console.log('  未找到带人口标注的城市，且数据集无中心坐标，请手动编辑 data.js');
+      process.exit(1);
+    }
+    console.log(`  未找到带人口标注的城市，退回使用 ${en} 中心点作为单一覆盖区域`);
+    cities = [{ name: en, lat: clat, lng: clng, pop: 0, r: 0.1 }];
   }
-  for (const c of cities) console.log(`  ${c.name}  (${c.lat.toFixed(2)}, ${c.lng.toFixed(2)})  人口 ${c.pop.toLocaleString()}`);
+  for (const c of cities) console.log(`  ${c.name}  (${c.lat.toFixed(2)}, ${c.lng.toFixed(2)})  人口 ${c.pop ? c.pop.toLocaleString() : '未知'}`);
 
   console.log('[3/4] 写入 js/data.js …');
-  const cityLines = cities.map(c => `['${c.name.replace(/'/g, "\\'")}', ${c.lat.toFixed(2)}, ${c.lng.toFixed(2)}, ${radiusFor(c.pop)}]`).join(', ');
+  const cityLines = cities.map(c => `['${c.name.replace(/'/g, "\\'")}', ${c.lat.toFixed(2)}, ${c.lng.toFixed(2)}, ${c.r ?? radiusFor(c.pop)}]`).join(', ');
   const phones = calling ? `['${calling} ### ### ###']` : `['+000 ### ### ###'] /* 未获取到区号，请手动修正 */`;
   const arr = a => `[${a.map(x => `'${x}'`).join(', ')}]`;
   const entry = `  ${code}: { // 由 add-country.js 自动生成；姓名池为通用占位，建议按当地习惯完善
@@ -116,12 +123,14 @@ function radiusFor(pop) {
     l: ${arr(GENERIC_NAMES.l)},
   },
 `;
-  const anchor = '};\n\nconst EMAIL_DOMAINS';
-  if (!dataSrc.includes(anchor)) {
+  // 插入到 COUNTRIES 结尾（EMAIL_DOMAINS 之前最后一个 "};"），对 CRLF/LF 行尾均兼容
+  const domIdx = dataSrc.lastIndexOf('const EMAIL_DOMAINS');
+  const closeIdx = domIdx > 0 ? dataSrc.lastIndexOf('};', domIdx) : -1;
+  if (closeIdx < 0) {
     console.log('  未找到 data.js 插入点（COUNTRIES 结尾），请手动插入以下内容：\n' + entry);
     process.exit(1);
   }
-  fs.writeFileSync(DATA_PATH, dataSrc.replace(anchor, entry + '};\n\nconst EMAIL_DOMAINS'));
+  fs.writeFileSync(DATA_PATH, dataSrc.slice(0, closeIdx) + entry + dataSrc.slice(closeIdx));
   console.log(`  已添加 ${code} 条目`);
 
   if (noPool) {
