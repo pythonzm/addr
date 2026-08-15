@@ -70,17 +70,32 @@ function updateThemeIcon(theme) {
 }
 
 // ---------- 国家选择器 & Pill 标签 ----------
+// 按筛选框内容重建 option 列表（不能用 CSS 隐藏 option，Safari 不支持）
 function fillCountrySelect() {
   const sel = document.getElementById('countrySelect');
+  const kw = (document.getElementById('countryFilter')?.value || '').trim().toLowerCase();
   const keep = sel.value || localStorage.getItem('addr_country') || 'US';
+  const matched = Object.entries(COUNTRIES).filter(([code, c]) => !kw
+    || code.toLowerCase().includes(kw)
+    || c.en.toLowerCase().includes(kw)
+    || c.name.toLowerCase().includes(kw));
+
   sel.innerHTML = '';
-  for (const [code, c] of Object.entries(COUNTRIES)) {
+  if (!matched.length) {
+    const opt = document.createElement('option');
+    opt.disabled = true;
+    opt.textContent = t('country_no_match');
+    sel.appendChild(opt);
+    return;
+  }
+  for (const [code, c] of matched) {
     const opt = document.createElement('option');
     opt.value = code;
     opt.textContent = (LANG === 'zh-CN' || LANG === 'zh-TW') ? `${c.name} (${c.en})` : c.en;
     sel.appendChild(opt);
   }
-  sel.value = keep;
+  // 原选中国家被筛掉时退到第一个匹配项
+  sel.value = matched.some(([code]) => code === keep) ? keep : matched[0][0];
 }
 
 function initCountrySelector() {
@@ -90,6 +105,20 @@ function initCountrySelector() {
     localStorage.setItem('addr_country', sel.value);
     highlightPill(sel.value);
     generate();
+  });
+
+  const filter = document.getElementById('countryFilter');
+  if (!filter) return;
+  filter.addEventListener('input', () => {
+    const prev = localStorage.getItem('addr_country') || 'US';
+    fillCountrySelect();
+    // 选中项被筛选改变（含无匹配后放宽筛选的情形）视为一次真实切换，
+    // 否则下拉框只剩一项时用户再点它不会触发 change，状态会和界面不一致
+    if (sel.value && sel.value !== prev) {
+      localStorage.setItem('addr_country', sel.value);
+      highlightPill(sel.value);
+      generate();
+    }
   });
 }
 
@@ -108,6 +137,12 @@ function initCountryPills() {
     btn.dataset.code = code;
     btn.innerHTML = `${flagImg(code)} <span>${countryDisplayName(c)}</span>`;
     btn.onclick = () => {
+      // 筛选框有内容时 code 可能不在当前 option 列表里，先清空筛选再选中
+      const filter = document.getElementById('countryFilter');
+      if (filter && filter.value) {
+        filter.value = '';
+        fillCountrySelect();
+      }
       document.getElementById('countrySelect').value = code;
       localStorage.setItem('addr_country', code);
       highlightPill(code);
@@ -253,6 +288,7 @@ async function generate() {
   try {
     const code = document.getElementById('countrySelect').value;
     const c = COUNTRIES[code];
+    if (!c) throw new Error(t('country_no_match'));
     const pool = await loadPool(code);
     current = (pool && pool.addrs && pool.addrs.length)
       ? fromPool(code, c, pool)
