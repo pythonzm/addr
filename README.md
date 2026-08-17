@@ -16,7 +16,7 @@ node tools/admin-server.js
 # 打开 http://127.0.0.1:8100
 ```
 
-网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家、以及"发布到远端"（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），任务日志实时显示。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
+网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家，任务日志实时显示。**添加国家与重建地址池成功后会自动发布到远端**（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），也保留了手动"发布到远端"按钮。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
 
 **认证与环境变量**：
 - `ADMIN_PASSWORD`：未设置时仅绑定 `127.0.0.1` 免密（本机模式）；设置后开启登录认证（会话 Cookie 12 小时滑动过期，同 IP 连错 5 次锁定 15 分钟），默认改绑 `0.0.0.0`，可用 `HOST` / `PORT` 覆盖。
@@ -88,7 +88,8 @@ uv run python -m http.server 8000
 
 ## 功能
 
-- 23 个国家/地区（美、加、英、德、法、意、西、荷、瑞士、奥、瑞典、波、捷、葡、日、韩、泰、越南、中国台湾、中国香港、新加坡、澳、巴西）
+- 25 个国家/地区（美、加、英、德、法、意、西、荷、瑞士、奥、瑞典、波、捷、葡、日、韩、泰、越南、马来西亚、菲律宾、中国台湾、中国香港、新加坡、澳、巴西）
+- 国家下拉框支持按中文名 / 英文名 / 代码即时筛选
 - 地图定位（Leaflet + OSM 瓦片），门牌级精度标识
 - 点击任意字段复制 / 一键复制全部
 - 本地保存（localStorage）、导出 CSV / JSON
@@ -96,17 +97,19 @@ uv run python -m http.server 8000
 ## 文件结构
 
 ```
-index.html          页面结构
-css/style.css       样式
-js/data.js          国家数据（城市坐标、姓名池、电话格式）
-js/app.js           核心逻辑（地址池优先 → Overpass 实时兜底 → 渲染）
-tools/build-pool.js 地址池抽取脚本
-data/pool/*.json    各国离线地址池（真实 OSM 门牌地址）
+index.html            页面结构
+css/style.css         样式
+js/data.js            国家数据（城市坐标、姓名池、电话格式）
+js/app.js             核心逻辑（地址池优先 → Overpass 实时兜底 → 渲染）
+tools/build-pool.js   地址池抽取脚本
+tools/add-country.js  一键添加新国家（电话/姓名池由开源数据集自动生成）
+tools/admin-server.js 后台管理服务（配 admin.html 面板）
+data/pool/*.json      各国离线地址池（真实 OSM 门牌地址）
 ```
 
 ## 添加新国家
 
-一条命令自动完成（国家名/区号/语言 ← mledoze/countries 数据集；主要城市及坐标 ← Overpass 按人口选取；随后自动抽取地址池并报告 OSM 门牌覆盖度）：
+一条命令自动完成（国家名/区号/语言 ← mledoze/countries 数据集；主要城市及坐标 ← Overpass 按人口选取；手机号段模板 ← Google libphonenumber；姓名池 ← popular-names-by-country 数据集；随后自动抽取地址池并报告 OSM 门牌覆盖度）：
 
 ```powershell
 node tools/add-country.js VN          # 添加越南（ISO 3166-1 两位代码）
@@ -114,7 +117,7 @@ node tools/add-country.js TH 5       # 添加泰国，取人口最多的 5 个�
 node tools/add-country.js RO --no-pool  # 只写入 data.js，不抽地址池
 ```
 
-唯一无法自动化的是姓名池与手机号段：脚本会先填入通用占位（带注释标记），建议在 `js/data.js` 中按当地习惯完善。若抽取结果少于 500 条，说明该国/地区 OSM 门牌覆盖差（如中国大陆），会给出警告供你决定是否保留。
+电话模板与姓名池同样自动生成：手机号段取自 **Google libphonenumber**（全球覆盖，保留真实前缀）；姓名池取自 **popular-names-by-country** 数据集（约百国常用名/姓氏，非拉丁文字自动附罗马化拼写供邮箱生成）。个别字段数据集未覆盖时回退通用占位，并在日志中精确提示需完善的字段。所有网络请求经 curl 发出，遵循 `HTTP(S)_PROXY` 代理变量（代理与直连自动切换）。若抽取结果少于 500 条，说明该国/地区 OSM 门牌覆盖差（如中国大陆），会给出警告供你决定是否保留。
 
 ## 注意事项
 
