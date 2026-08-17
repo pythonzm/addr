@@ -2,81 +2,626 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>后台管理 · 真实地址生成器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0B0F19; --card: #121A2B; --border: rgba(255,255,255,.08);
-      --text: #F3F4F6; --muted: #9CA3AF; --primary: #0EA5E9; --ok: #10B981; --bad: #EF4444; --warn: #F59E0B;
+      --bg: #090D16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-hover: rgba(26, 36, 56, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(14, 165, 233, 0.5);
+      --text: #F3F4F6;
+      --text-sub: #94A3B8;
+      --muted: #64748B;
+      --primary: #0EA5E9;
+      --primary-hover: #0284C7;
+      --primary-light: rgba(14, 165, 233, 0.12);
+      --ok: #10B981;
+      --ok-light: rgba(16, 185, 129, 0.15);
+      --bad: #EF4444;
+      --bad-light: rgba(239, 68, 68, 0.15);
+      --warn: #F59E0B;
+      --warn-light: rgba(245, 158, 11, 0.15);
+      --purple: #8B5CF6;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+      --radius-xl: 16px;
+      --radius-lg: 12px;
+      --radius-md: 8px;
+      --radius-sm: 6px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
-    .wrap { max-width: 1000px; margin: 0 auto; }
-    h1 { font-size: 1.4rem; margin-bottom: 4px; }
-    .sub { color: var(--muted); font-size: .85rem; margin-bottom: 20px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
-    .card h2 { font-size: 1rem; margin-bottom: 12px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    button { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: .88rem; }
-    button:hover { filter: brightness(1.15); }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-    button.gray { background: #334155; }
-    button.green { background: var(--ok); }
-    button.small { padding: 4px 10px; font-size: .8rem; }
-    input { background: #0B0F19; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: .9rem; }
-    input#ccode { width: 200px; }
-    input#ccities { width: 70px; }
-    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 600; }
-    .num { font-variant-numeric: tabular-nums; }
-    .tag { padding: 2px 8px; border-radius: 999px; font-size: .75rem; }
-    .tag.ok { background: rgba(16,185,129,.15); color: var(--ok); }
-    .tag.warn { background: rgba(245,158,11,.15); color: var(--warn); }
-    .tag.bad { background: rgba(239,68,68,.15); color: var(--bad); }
-    #log { background: #05080F; border: 1px solid var(--border); border-radius: 8px; padding: 12px; height: 260px; overflow-y: auto; font-family: Consolas, monospace; font-size: .78rem; white-space: pre-wrap; color: #A7F3D0; }
-    #jobbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: .85rem; color: var(--muted); }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-    .dot.running { background: var(--warn); animation: blink 1s infinite; }
-    .dot.done { background: var(--ok); }
-    .dot.failed { background: var(--bad); }
-    @keyframes blink { 50% { opacity: .3; } }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    /* 顶部导航 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #0EA5E9, #2563EB);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.35);
+      flex-shrink: 0;
+    }
+
+    .brand-title h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-admin {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+
+    .brand-title p {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 卡片通用 */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 20px 22px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .card-head h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-head h2 svg {
+      color: var(--primary);
+    }
+
+    /* 任务状态栏 */
+    #jobbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+      transition: background 0.3s ease;
+    }
+
+    .dot.running {
+      background: var(--warn);
+      box-shadow: 0 0 10px var(--warn);
+      animation: blink 1.2s infinite ease-in-out;
+    }
+
+    .dot.done {
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok);
+    }
+
+    .dot.failed {
+      background: var(--bad);
+      box-shadow: 0 0 8px var(--bad);
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* 终端日志窗口 */
+    .log-container {
+      position: relative;
+    }
+
+    #log {
+      background: #050811;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      height: 260px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #34D399;
+      scrollbar-width: thin;
+    }
+
+    #log::-webkit-scrollbar {
+      width: 6px;
+    }
+    #log::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .log-tools {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 6px;
+    }
+
+    /* 表单与输入控件 */
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .input-group-fixed {
+      flex: 0 0 90px;
+      min-width: 80px;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+
+    input {
+      background: rgba(9, 13, 22, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* 按钮 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+    }
+
+    .btn-green {
+      background: var(--ok);
+    }
+
+    .btn-green:hover {
+      background: #059669;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-ghost-sm {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-ghost-sm:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    /* 表格 */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text-sub);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tag.ok {
+      background: var(--ok-light);
+      color: var(--ok);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .tag.warn {
+      background: var(--warn-light);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .tag.bad {
+      background: var(--bad-light);
+      color: var(--bad);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .country-code-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .cities-text {
+      color: var(--text-sub);
+      font-size: 0.8rem;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      body {
+        padding: 16px 12px 40px;
+      }
+
+      .header {
+        padding-bottom: 16px;
+        margin-bottom: 18px;
+      }
+
+      .brand-title h1 {
+        font-size: 1.15rem;
+      }
+
+      .card {
+        padding: 16px 14px;
+        border-radius: var(--radius-lg);
+        margin-bottom: 16px;
+      }
+
+      .card-head {
+        margin-bottom: 12px;
+      }
+
+      .row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .input-group, .input-group-fixed {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .btn {
+        width: 100%;
+        min-height: 42px;
+      }
+
+      #log {
+        height: 200px;
+        font-size: 0.75rem;
+      }
+
+      th, td {
+        padding: 10px 10px;
+        font-size: 0.8rem;
+      }
+
+      .cities-text {
+        max-width: 140px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <h1>后台管理</h1>
-      <button id="logoutBtn" class="gray" style="display:none;" onclick="logout()">退出登录</button>
-    </div>
-    <p class="sub">重建地址池 / 添加国家 / 发布到 GitHub（认证由 ADMIN_PASSWORD 环境变量控制）</p>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>
+            <span>真实地址生成器</span>
+            <span class="badge-admin">Admin Portal</span>
+          </h1>
+          <p>重建地址池 · 添加国家 · 远端推送发布</p>
+        </div>
+      </div>
 
+      <div class="header-actions">
+        <a href="/" class="btn btn-secondary btn-sm" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span>访问前台</span>
+        </a>
+        <button id="logoutBtn" class="btn btn-secondary btn-sm" style="display:none;" onclick="logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>退出登录</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 任务执行面板 -->
     <div class="card">
-      <h2>任务</h2>
-      <div id="jobbar"><span class="dot" id="jobdot"></span><span id="jobname">暂无任务</span></div>
-      <div id="log">（任务日志将显示在这里）</div>
+      <div class="card-head">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 8 6 4-6 4Z"/></svg>
+          <span>任务控制台</span>
+        </h2>
+        <div id="jobbar">
+          <span class="dot" id="jobdot"></span>
+          <span id="jobname">暂无任务</span>
+        </div>
+      </div>
+      
+      <div class="log-container">
+        <div class="log-tools">
+          <button class="btn-ghost-sm" onclick="clearLog()">清空视窗</button>
+          <button class="btn-ghost-sm" onclick="copyLog()">复制日志</button>
+        </div>
+        <div id="log">（任务日志将实时在此输出...）</div>
+      </div>
     </div>
 
+    <!-- 添加新国家 -->
     <div class="card">
-      <h2>添加新国家</h2>
+      <div class="card-head">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          <span>添加新国家/地区</span>
+        </h2>
+      </div>
+
       <div class="row">
-        <input id="ccode" placeholder="代码或名称，如 TH / 泰国 / Thailand">
-        <input id="ccities" type="number" value="4" min="1" max="8" title="城市数">
-        <button onclick="addCountry()">自动添加并抽取地址池</button>
-        <span class="sub" style="margin:0">支持两位代码、中文名或英文名；完成后记得在 data.js 完善姓名池，再发布</span>
+        <div class="input-group">
+          <label class="input-label" for="ccode">国家代码或名称</label>
+          <input id="ccode" placeholder="如 TH / 泰国 / Thailand">
+        </div>
+        <div class="input-group input-group-fixed">
+          <label class="input-label" for="ccities">抽取城市数</label>
+          <input id="ccities" type="number" value="4" min="1" max="8">
+        </div>
+        <div style="flex:0 0 auto; display:flex; align-items:flex-end;">
+          <button class="btn" onclick="addCountry()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            <span>自动添加并抽取地址池</span>
+          </button>
+        </div>
       </div>
+      <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;">
+        💡 支持 ISO-3166-1 代码、中文名称或英文名。抓取成功后可在 <code>js/data.js</code> 进一步定制本地姓名池。
+      </p>
     </div>
 
+    <!-- 地址池状态表格 -->
     <div class="card">
-      <h2>地址池 <span class="sub" id="summary" style="margin:0"></span></h2>
-      <div class="row" style="margin-bottom:12px">
-        <button onclick="rebuild([])">重建全部</button>
-        <button class="green" onclick="publish()">发布到远端（git push）</button>
+      <div class="card-head">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+          <span>已注册国家地址池</span>
+          <span style="font-size:0.8rem;color:var(--text-sub);font-weight:normal;" id="summary"></span>
+        </h2>
+        <div class="row" style="gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="rebuild([])">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>重建全部</span>
+          </button>
+          <button class="btn btn-green btn-sm" onclick="publish()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+            <span>推送发布到 GitHub</span>
+          </button>
+        </div>
       </div>
-      <table>
-        <thead><tr><th>代码</th><th>国家/地区</th><th>城市</th><th>条数</th><th>生成日期</th><th>操作</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>代码</th>
+              <th>国家/地区</th>
+              <th>覆盖城市</th>
+              <th>物理地址数</th>
+              <th>生成时间</th>
+              <th style="text-align:right;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -97,24 +642,36 @@
       location.reload();
     }
 
+    function clearLog() {
+      document.getElementById('log').textContent = '';
+    }
+
+    function copyLog() {
+      const text = document.getElementById('log').textContent;
+      navigator.clipboard?.writeText(text).then(() => alert('日志已复制到剪贴板'));
+    }
+
     async function refreshStatus() {
       const s = await api('/api/status');
-      document.getElementById('logoutBtn').style.display = s.auth ? '' : 'none';
+      document.getElementById('logoutBtn').style.display = s.auth ? 'inline-flex' : 'none';
       const tb = document.getElementById('tbody');
       tb.innerHTML = s.countries.map(c => {
         const pool = c.pool
-          ? `<span class="tag ${c.pool.count < 800 ? 'warn' : 'ok'}">${c.pool.count}</span>`
-          : '<span class="tag bad">无</span>';
+          ? `<span class="tag ${c.pool.count < 800 ? 'warn' : 'ok'}">${c.pool.count.toLocaleString()} 条</span>`
+          : '<span class="tag bad">暂无地址池</span>';
         return `<tr>
-          <td>${c.code}</td><td>${c.name} (${c.en})</td>
-          <td class="sub" style="margin:0">${c.cities.join('、')}</td>
+          <td><span class="country-code-badge">${c.code}</span></td>
+          <td><strong>${c.name}</strong> <span style="color:var(--text-sub);font-size:0.8rem;">(${c.en})</span></td>
+          <td><div class="cities-text" title="${c.cities.join('、')}">${c.cities.join('、')}</div></td>
           <td class="num">${pool}</td>
-          <td class="num">${c.pool ? c.pool.generated : '-'}</td>
-          <td><button class="small gray" onclick="rebuild(['${c.code}'])">重建</button></td>
+          <td class="num" style="color:var(--text-sub);font-size:0.8rem;">${c.pool ? c.pool.generated : '-'}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-secondary btn-sm" onclick="rebuild(['${c.code}'])">重建</button>
+          </td>
         </tr>`;
       }).join('');
       const total = s.countries.reduce((n, c) => n + (c.pool ? c.pool.count : 0), 0);
-      document.getElementById('summary').textContent = `共 ${s.countries.length} 国 / ${total.toLocaleString()} 条`;
+      document.getElementById('summary').textContent = `(共 ${s.countries.length} 国 · ${total.toLocaleString()} 条真实门牌)`;
     }
 
     async function pollJob() {
@@ -122,7 +679,7 @@
         const { job } = await api('/api/job?from=' + logOffset);
         const dot = document.getElementById('jobdot');
         if (!job) { requestAnimationFrame(() => setTimeout(pollJob, 1500)); return; }
-        document.getElementById('jobname').textContent = `${job.name} · ${job.started} · ${{ running: '运行中', done: '已完成', failed: '失败' }[job.status]}`;
+        document.getElementById('jobname').textContent = `${job.name} · ${job.started} · ${{ running: '执行中...', done: '已顺利完成', failed: '执行失败' }[job.status]}`;
         dot.className = 'dot ' + job.status;
         if (job.logs.length) {
           const el = document.getElementById('log');
@@ -145,8 +702,8 @@
     }
 
     const rebuild = codes => run('/api/build-pool', codes.length ? { codes } : { all: true },
-      codes.length ? `重建 ${codes.join(' ')} 的地址池？（每国约 2-5 分钟）` : '重建全部国家地址池？（约 1 小时）');
-    const publish = () => run('/api/publish', {}, '提交所有变更并推送到 GitHub？（Pages 会自动重新部署）');
+      codes.length ? `重建 ${codes.join(' ')} 的地址池？（每国约需 2-5 分钟）` : '确定重建全部国家地址池？（耗时较长，请耐心等待）');
+    const publish = () => run('/api/publish', {}, '确定提交所有变更并推送到远端 GitHub 仓库？');
     function addCountry() {
       const code = document.getElementById('ccode').value.trim();
       const cities = document.getElementById('ccities').value;

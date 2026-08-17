@@ -64,25 +64,113 @@ function issueSession(req, res) {
 }
 
 const LOGIN_PAGE = `<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>登录 · 后台管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0B0F19; color: #F3F4F6;
-         display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-  .box { background: #121A2B; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 32px; width: 320px; }
-  h1 { font-size: 1.1rem; margin: 0 0 18px; }
-  input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px;
-          border: 1px solid rgba(255,255,255,.12); background: #0B0F19; color: #F3F4F6; font-size: .95rem; }
-  button { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #0EA5E9; color: #fff;
-           font-size: .95rem; cursor: pointer; }
-  button:hover { filter: brightness(1.15); }
-  .err { color: #EF4444; font-size: .82rem; min-height: 1.2em; margin-bottom: 8px; }
+  :root {
+    --bg: #090D16;
+    --card: rgba(17, 24, 39, 0.85);
+    --border: rgba(255,255,255,.08);
+    --text: #F3F4F6;
+    --muted: #94A3B8;
+    --primary: #0EA5E9;
+    --primary-hover: #0284C7;
+    --err: #EF4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .box {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 36px 30px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+  }
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0EA5E9, #2563EB);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    margin-bottom: 20px;
+    box-shadow: 0 0 16px rgba(14,165,233,0.4);
+  }
+  h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+  p.desc { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(9, 13, 22, 0.8);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 18px rgba(14, 165, 233, 0.35);
+  }
+  button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  .err {
+    color: var(--err);
+    font-size: 0.82rem;
+    min-height: 1.3em;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
 </style></head>
 <body><form class="box" onsubmit="login(event)">
-  <h1>后台管理登录</h1>
-  <input id="pw" type="password" placeholder="访问密码" autofocus autocomplete="current-password">
+  <div class="logo-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+  </div>
+  <h1>管理控制台</h1>
+  <p class="desc">真实地址生成器 · 管理员身份验证</p>
+  <div class="field">
+    <label for="pw">访问口令</label>
+    <input id="pw" type="password" placeholder="请输入管理员密码" autofocus autocomplete="current-password" required>
+  </div>
   <div class="err" id="err"></div>
-  <button>登 录</button>
+  <button type="submit">登 录</button>
 </form>
 <script>
 async function login(e) {
