@@ -202,6 +202,14 @@ const COUNTRIES = {
     fr: ['malee', 'suda', 'napa', 'porntip', 'wipa', 'siriporn', 'kanya', 'arunee'],
     lr: ['jaidee', 'suksawat', 'wongsawat', 'srisuk', 'boonmee', 'thongdee', 'rattanakul', 'pongpan'],
   },
+  PH: { // 由 add-country.js 自动生成（电话/姓名池由 AI 补全）
+    name: '菲律宾', en: 'Philippines', lang: 'en', fmt: 'NS',
+    cities: [['Quezon City', 14.65, 121.05, 0.05], ['Manila', 14.59, 120.98, 0.04], ['Antipolo', 14.59, 121.18, 0.04], ['Taguig', 14.53, 121.07, 0.04]],
+    phones: ['+63 917 ### ####', '+63 918 ### ####', '+63 919 ### ####', '+63 920 ### ####', '+63 915 ### ####'],
+    m: ['Jose', 'Juan', 'Miguel', 'Angelo', 'Rafael', 'Christian', 'Joshua', 'Marco'],
+    f: ['Maria', 'Angelica', 'Nicole', 'Andrea', 'Camille', 'Bianca', 'Kathryn', 'Jasmine'],
+    l: ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Mendoza', 'Bautista', 'Villanueva', 'Aquino'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];

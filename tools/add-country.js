@@ -1,7 +1,8 @@
 // 一键添加新国家：自动获取国家信息、主要城市坐标，生成 data.js 条目并抽取地址池。
 // 用法：node tools/add-country.js <国家> [城市数=4] [--no-pool]
 // <国家> 支持：两位/三位代码、中文名、英文名或别名，如 VN / 越南 / Vietnam / 泰国 / Thailand
-// 姓名池无法可靠自动化，默认填入通用占位池（可在 data.js 中手动完善）。
+// 电话模板与姓名池自动来自开源数据集（Google libphonenumber + popular-names-by-country），
+// 数据集未覆盖或获取失败时回退通用占位池。
 
 const fs = require('fs');
 const path = require('path');
@@ -30,10 +31,112 @@ const GENERIC_NAMES = {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function fetchJson(url, opts) {
-  const r = await fetch(url, opts);
-  if (!r.ok) throw new Error(`${url.split('/')[2]} HTTP ${r.status}`);
-  return r.json();
+// 所有网络请求统一走 curl（Node 内置 fetch 不走 HTTP(S)_PROXY 代理环境变量）。
+// 部分域名需代理、部分域名代理反而不通：先按环境变量走代理，失败自动重试直连；
+// opts.validate 可校验响应内容（识别代理返回的错误页并触发重试）。
+async function fetchRaw(url, opts = {}) {
+  const base = ['-sSf', '--max-time', '120', url];
+  for (const [k, v] of Object.entries(opts.headers || {})) base.push('-H', `${k}: ${v}`);
+  if (opts.body) base.push('--data-raw', opts.body);
+  let lastErr;
+  for (const extra of [[], ['--noproxy', '*']]) {
+    const r = spawnSync('curl', [...base, ...extra], { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
+    try {
+      if (r.error) throw r.error;
+      if (r.status !== 0) throw new Error(`curl 退出码 ${r.status}` + (r.stderr ? `：${String(r.stderr).trim().slice(0, 150)}` : ''));
+      if (opts.validate && !opts.validate(r.stdout)) throw new Error('响应内容异常');
+      return r.stdout;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`${url.split('/')[2]} 请求失败（代理与直连均不通）：${lastErr.message.slice(0, 150)}`);
+}
+
+async function fetchJson(url, opts = {}) {
+  return JSON.parse(await fetchRaw(url, {
+    ...opts,
+    validate: s => { try { JSON.parse(s); return true; } catch { return false; } },
+  }));
+}
+
+// ---------- 从开源数据集生成电话模板与姓名池 ----------
+// 电话：Google libphonenumber 元数据（各国手机示例号码 → 真实号段模板）
+// 姓名：sigpwned/popular-names-by-country-dataset（106 国常用名/75 国姓氏，带性别与罗马化）
+const PHONE_META_URL = 'https://raw.githubusercontent.com/google/libphonenumber/master/resources/PhoneNumberMetadata.xml';
+const NAMES_BASE = 'https://raw.githubusercontent.com/sigpwned/popular-names-by-country-dataset/main';
+
+// 极简 CSV 解析（支持引号字段）
+function csvRows(text) {
+  return text.split(/\r?\n/).filter(Boolean).map(line => {
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  });
+}
+
+// 含基本拉丁/扩展拉丁之外的字符即视为非拉丁文字（需附罗马化池）
+const nonLatin = s => /[^\u0020-\u024F\u1E00-\u1EFF\s.'\u2019-]/.test(s);
+
+// 手机模板：取该国 mobile 示例号码，保留真实前缀，其余数字换成 #，按 3/4 位分组
+async function phoneTemplate(iso, calling) {
+  if (!calling) return null;
+  const xml = await fetchRaw(PHONE_META_URL, { validate: s => s.includes('<territory') });
+  const terr = xml.match(new RegExp(`<territory id="${iso}"[\\s\\S]*?</territory>`));
+  const ex = terr && terr[0].match(/<mobile>[\s\S]*?<exampleNumber>(\d+)<\/exampleNumber>/);
+  if (!ex) return null;
+  const num = ex[1];
+  const keep = num.length >= 9 ? 3 : 2;
+  let rest = num.length - keep;
+  const groups = [];
+  while (rest > 4) { groups.push('###'); rest -= 3; }
+  groups.push('#'.repeat(rest));
+  return `${calling} ${num.slice(0, keep)} ${groups.join(' ')}`;
+}
+
+// 姓名池：按国家取常用男名/女名/姓氏各前 8（本地文字 + 罗马化）
+async function namePools(iso) {
+  const csvOpts = { validate: s => s.includes(',') && /Country/i.test(s.slice(0, 200)) };
+  const fn = csvRows(await fetchRaw(NAMES_BASE + '/common-forenames-by-country.csv', csvOpts)).filter(r => r[0].replace(/^﻿/, '') === iso);
+  const sn = csvRows(await fetchRaw(NAMES_BASE + '/common-surnames-by-country.csv', csvOpts)).filter(r => r[0].replace(/^﻿/, '') === iso);
+  // 列位：名 CSV [9]=Gender [10]=Localized [11]=Romanized；姓 CSV [4]=Localized [5]=Romanized
+  const pick = (rows, li, ri) => {
+    const loc = [], rom = [], seen = new Set();
+    for (const r of rows) {
+      // U+0301 为组合重音符（数据集源自维基百科，常带注音标记），显示时应去除
+      const strip = v => (v || '').trim().replace(/\u0301/g, '');
+      const l = strip(r[li]), ro = strip(r[ri]), name = l || ro;
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      loc.push(name);
+      rom.push((ro || l).toLowerCase());
+      if (loc.length >= 8) break;
+    }
+    return { loc, rom };
+  };
+  return {
+    m: pick(fn.filter(r => r[9] === 'M'), 10, 11),
+    f: pick(fn.filter(r => r[9] === 'F'), 10, 11),
+    l: pick(sn, 4, 5),
+  };
+}
+
+// 汇总：任一来源失败不影响其余，缺的字段返回 null 由调用方回退占位池
+async function datasetEnrich(iso, calling) {
+  const gen = { phones: null, m: null, f: null, l: null, mr: null, fr: null, lr: null };
+  try { gen.phones = await phoneTemplate(iso, calling); }
+  catch (e) { console.log('  电话数据集获取失败：' + e.message); }
+  try {
+    const n = await namePools(iso);
+    if (n.m.loc.length >= 4 && n.f.loc.length >= 4) { gen.m = n.m.loc; gen.f = n.f.loc; gen.mr = n.m.rom; gen.fr = n.f.rom; }
+    if (n.l.loc.length >= 4) { gen.l = n.l.loc; gen.lr = n.l.rom; }
+  } catch (e) { console.log('  姓名数据集获取失败：' + e.message); }
+  return gen;
 }
 
 async function overpassCities(iso, count) {
@@ -90,7 +193,7 @@ function resolveCountry(all, query) {
     process.exit(1);
   }
 
-  console.log(`[1/4] 解析国家「${query}」（mledoze/countries 数据集）…`);
+  console.log(`[1/5] 解析国家「${query}」（mledoze/countries 数据集）…`);
   const all = await fetchJson('https://raw.githubusercontent.com/mledoze/countries/master/countries.json');
   const matches = resolveCountry(all, query);
   if (!matches.length) {
@@ -118,7 +221,7 @@ function resolveCountry(all, query) {
   const fmt = (lang === 'en' || lang === 'fr') ? 'NS' : (lang === 'es' || lang === 'pt') ? 'S,N' : 'SN';
   console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  地址格式 ${fmt}`);
 
-  console.log(`[2/4] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
+  console.log(`[2/5] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
   let cities = await overpassCities(iso, cityCount);
   if (!cities.length) {
     // 城邦/特别行政区常无带人口标注的 place 节点：退回用数据集中心坐标作单一城市
@@ -132,17 +235,31 @@ function resolveCountry(all, query) {
   }
   for (const c of cities) console.log(`  ${c.name}  (${c.lat.toFixed(2)}, ${c.lng.toFixed(2)})  人口 ${c.pop ? c.pop.toLocaleString() : '未知'}`);
 
-  console.log('[3/4] 写入 js/data.js …');
+  console.log('[3/5] 从开源数据集生成电话模板与姓名池…');
+  const gen = await datasetEnrich(iso, calling);
+  if (gen.phones) console.log(`  电话模板：${gen.phones}`);
+  else console.log('  数据集无该国手机号样例，回退区号通用模板');
+  if (gen.m) console.log(`  姓名池：男 ${gen.m.slice(0, 3).join('/')}…  女 ${gen.f.slice(0, 3).join('/')}…`);
+  if (gen.l) console.log(`  姓氏池：${gen.l.slice(0, 3).join('/')}…`);
+  if (!gen.m || !gen.l) console.log('  姓名数据集未覆盖的部分回退通用占位池（可在 data.js 手动完善）');
+
+  console.log('[4/5] 写入 js/data.js …');
   const cityLines = cities.map(c => `['${c.name.replace(/'/g, "\\'")}', ${c.lat.toFixed(2)}, ${c.lng.toFixed(2)}, ${c.r ?? radiusFor(c.pop)}]`).join(', ');
-  const phones = calling ? `['${calling} ### ### ###']` : `['+000 ### ### ###'] /* 未获取到区号，请手动修正 */`;
-  const arr = a => `[${a.map(x => `'${x}'`).join(', ')}]`;
-  const entry = `  ${code}: { // 由 add-country.js 自动生成；姓名池为通用占位，建议按当地习惯完善
+  const arr = a => `[${a.map(x => `'${String(x).replace(/'/g, "\\'")}'`).join(', ')}]`;
+  const phones = gen.phones ? `['${gen.phones}']`
+    : calling ? `['${calling} ### ### ###'] /* 数据集未覆盖，粗糙模板，建议修正 */`
+    : `['+000 ### ### ###'] /* 未获取到区号，请手动修正 */`;
+  // 姓名含非拉丁文字时按站内约定附带罗马化池（用于生成邮箱）
+  const useRoman = gen.m && gen.f && gen.l && [...gen.m, ...gen.f, ...gen.l].some(nonLatin);
+  const roman = useRoman ? `\n    mr: ${arr(gen.mr)}, fr: ${arr(gen.fr)}, lr: ${arr(gen.lr)},` : '';
+  const full = gen.phones && gen.m && gen.l;
+  const entry = `  ${code}: { // 由 add-country.js 自动生成${full ? '（电话/姓名池来自开源数据集）' : '；部分字段为通用占位，建议按当地习惯完善'}
     name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}',
     cities: [${cityLines}],
     phones: ${phones},
-    m: ${arr(GENERIC_NAMES.m)},
-    f: ${arr(GENERIC_NAMES.f)},
-    l: ${arr(GENERIC_NAMES.l)},
+    m: ${arr(gen.m || GENERIC_NAMES.m)},
+    f: ${arr(gen.f || GENERIC_NAMES.f)},
+    l: ${arr(gen.l || GENERIC_NAMES.l)},${roman}
   },
 `;
   // 插入到 COUNTRIES 结尾（EMAIL_DOMAINS 之前最后一个 "};"），对 CRLF/LF 行尾均兼容
@@ -156,10 +273,10 @@ function resolveCountry(all, query) {
   console.log(`  已添加 ${code} 条目`);
 
   if (noPool) {
-    console.log('[4/4] 跳过地址池抽取（--no-pool）。之后可运行: node tools/build-pool.js ' + code);
+    console.log('[5/5] 跳过地址池抽取（--no-pool）。之后可运行: node tools/build-pool.js ' + code);
     return;
   }
-  console.log(`[4/4] 抽取 ${code} 地址池（数分钟）…`);
+  console.log(`[5/5] 抽取 ${code} 地址池（数分钟）…`);
   const r = spawnSync(process.execPath, [path.join(__dirname, 'build-pool.js'), code], { stdio: 'inherit' });
   if (r.status !== 0) {
     console.log('地址池抽取失败，可稍后重试: node tools/build-pool.js ' + code);
@@ -170,7 +287,7 @@ function resolveCountry(all, query) {
     if (pool.count < 500) {
       console.log(`⚠ ${code} 仅抽到 ${pool.count} 条——该国/地区 OSM 门牌覆盖较差，站点将频繁复用少量地址，请酌情考虑是否保留。`);
     } else {
-      console.log(`✔ ${code} 添加完成，地址池 ${pool.count} 条。记得在 data.js 中完善姓名池与电话格式。`);
+      console.log(`✔ ${code} 添加完成，地址池 ${pool.count} 条。${full ? '电话与姓名池来自开源数据集，可在 data.js 中核对微调。' : '记得在 data.js 中完善姓名池与电话格式。'}`);
     }
   } catch (e) { /* 汇总仅供参考 */ }
 })().catch(e => { console.error('失败: ' + e.message); process.exit(1); });
