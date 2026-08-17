@@ -203,7 +203,7 @@ function appendLog(chunk) {
   if (job.logs.length > 800) job.logs.splice(0, job.logs.length - 800);
 }
 
-function startJob(name, cmd, args, res) {
+function startJob(name, cmd, args, res, opts = {}) {
   if (job && job.status === 'running') return send(res, 409, { error: '已有任务在运行，请等待完成' });
   job = { name, logs: [], status: 'running', started: new Date().toLocaleString() };
   const p = spawn(cmd, args, { cwd: ROOT });
@@ -212,36 +212,44 @@ function startJob(name, cmd, args, res) {
   p.on('error', e => { appendLog('启动失败: ' + e.message); job.status = 'failed'; });
   p.on('close', code => {
     appendLog(`—— 任务结束（退出码 ${code}）——`);
-    job.status = code === 0 ? 'done' : 'failed';
+    if (code !== 0) { job.status = 'failed'; return; }
+    if (!opts.autoPublish) { job.status = 'done'; return; }
+    // 任务成功后自动发布到远端（job 保持 running，前端持续拉取发布日志）
+    appendLog('—— 任务成功，自动发布到远端 ——');
+    runPublishSteps(ok => { job.status = ok ? 'done' : 'failed'; });
   });
   send(res, 200, { ok: true });
 }
 
-// 发布：git add/commit/push，串行执行
-function publish(res) {
-  if (job && job.status === 'running') return send(res, 409, { error: '已有任务在运行，请等待完成' });
-  job = { name: '发布到远端', logs: [], status: 'running', started: new Date().toLocaleString() };
+// git add/commit/push 串行执行，日志写入当前 job；done(ok) 回调结果
+function runPublishSteps(done) {
   const steps = [
     ['git', ['add', '-A']],
     ['git', ['commit', '-m', 'chore: 后台管理更新地址池/国家数据']],
     ['git', ['push']],
   ];
   const next = i => {
-    if (i >= steps.length) { appendLog('—— 发布完成，GitHub Pages / Vercel 将自动重新部署 ——'); job.status = 'done'; return; }
+    if (i >= steps.length) { appendLog('—— 发布完成，GitHub Pages / Vercel 将自动重新部署 ——'); return done(true); }
     const [cmd, args] = steps[i];
     appendLog(`$ ${cmd} ${args.join(' ')}`);
     execFile(cmd, args, { cwd: ROOT }, (err, stdout, stderr) => {
       if (stdout) appendLog(stdout);
       if (stderr) appendLog(stderr);
       if (err && !/nothing to commit|无文件要提交/.test(stdout + stderr)) {
-        job.status = 'failed';
         appendLog('失败: ' + err.message);
-        return;
+        return done(false);
       }
       next(i + 1);
     });
   };
   next(0);
+}
+
+// 发布：手动触发 git add/commit/push
+function publish(res) {
+  if (job && job.status === 'running') return send(res, 409, { error: '已有任务在运行，请等待完成' });
+  job = { name: '发布到远端', logs: [], status: 'running', started: new Date().toLocaleString() };
+  runPublishSteps(ok => { job.status = ok ? 'done' : 'failed'; });
   send(res, 200, { ok: true });
 }
 
@@ -309,7 +317,7 @@ const server = http.createServer(async (req, res) => {
     const list = Array.isArray(codes) ? codes.filter(c => /^[A-Z]{2}$/.test(c)) : [];
     if (!list.length && all !== true) return send(res, 400, { error: '请指定国家代码，或显式传 all:true 重建全部' });
     const args = [path.join('tools', 'build-pool.js'), ...list];
-    return startJob(list.length ? `重建地址池: ${list.join(' ')}` : '重建全部地址池', process.execPath, args, res);
+    return startJob(list.length ? `重建地址池: ${list.join(' ')}` : '重建全部地址池', process.execPath, args, res, { autoPublish: true });
   }
   if (req.method === 'POST' && url.pathname === '/api/add-country') {
     const { code, cities } = await readBody(req);
@@ -317,7 +325,7 @@ const server = http.createServer(async (req, res) => {
     const query = String(code || '').trim();
     if (!query || query.length > 50 || /[\r\n"'\\]/.test(query)) return send(res, 400, { error: '请输入国家代码或名称（如 TH / 泰国 / Thailand）' });
     const n = Math.min(Math.max(parseInt(cities, 10) || 4, 1), 8);
-    return startJob(`添加国家: ${query}`, process.execPath, [path.join('tools', 'add-country.js'), query, String(n)], res);
+    return startJob(`添加国家: ${query}`, process.execPath, [path.join('tools', 'add-country.js'), query, String(n)], res, { autoPublish: true });
   }
   if (req.method === 'POST' && url.pathname === '/api/publish') {
     return publish(res);

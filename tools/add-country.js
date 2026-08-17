@@ -253,6 +253,11 @@ function resolveCountry(all, query) {
   const useRoman = gen.m && gen.f && gen.l && [...gen.m, ...gen.f, ...gen.l].some(nonLatin);
   const roman = useRoman ? `\n    mr: ${arr(gen.mr)}, fr: ${arr(gen.fr)}, lr: ${arr(gen.lr)},` : '';
   const full = gen.phones && gen.m && gen.l;
+  // 收尾提示按字段精确说明，避免"已自动生成却提示手动完善"的误导
+  const missing = [!gen.phones && '电话模板', !gen.m && '男/女名', !gen.l && '姓氏'].filter(Boolean);
+  const genNote = full
+    ? '电话与姓名池均来自开源数据集，无需手动补充。'
+    : `${missing.join('、')}数据集未覆盖（已填占位，如需更真实可在 data.js 中完善），其余字段已自动生成。`;
   const entry = `  ${code}: { // 由 add-country.js 自动生成${full ? '（电话/姓名池来自开源数据集）' : '；部分字段为通用占位，建议按当地习惯完善'}
     name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}',
     cities: [${cityLines}],
@@ -274,6 +279,7 @@ function resolveCountry(all, query) {
 
   if (noPool) {
     console.log('[5/5] 跳过地址池抽取（--no-pool）。之后可运行: node tools/build-pool.js ' + code);
+    console.log('  ' + genNote);
     return;
   }
   console.log(`[5/5] 抽取 ${code} 地址池（数分钟）…`);
@@ -286,8 +292,9 @@ function resolveCountry(all, query) {
     const pool = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'pool', code + '.json'), 'utf8'));
     if (pool.count < 500) {
       console.log(`⚠ ${code} 仅抽到 ${pool.count} 条——该国/地区 OSM 门牌覆盖较差，站点将频繁复用少量地址，请酌情考虑是否保留。`);
+      console.log('  ' + genNote);
     } else {
-      console.log(`✔ ${code} 添加完成，地址池 ${pool.count} 条。${full ? '电话与姓名池来自开源数据集，可在 data.js 中核对微调。' : '记得在 data.js 中完善姓名池与电话格式。'}`);
+      console.log(`✔ ${code} 添加完成，地址池 ${pool.count} 条。${genNote}`);
     }
   } catch (e) { /* 汇总仅供参考 */ }
 })().catch(e => { console.error('失败: ' + e.message); process.exit(1); });
