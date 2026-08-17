@@ -18,6 +18,7 @@ const PASSWORD = process.env.ADMIN_PASSWORD || '';
 const AUTH_ON = PASSWORD.length > 0;
 const HOST = process.env.HOST || (AUTH_ON ? '0.0.0.0' : '127.0.0.1');
 const PORT = parseInt(process.env.PORT, 10) || 8100;
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.SITE_URL || '/';
 
 let job = null; // 当前/最近一次任务 {name, logs[], status: running|done|failed, started}
 
@@ -296,7 +297,7 @@ const server = http.createServer(async (req, res) => {
   if (!isAuthed(req)) return send(res, 401, { error: '未登录或会话已过期' });
 
   if (req.method === 'GET' && url.pathname === '/api/status') {
-    return send(res, 200, { countries: loadStatus(), auth: AUTH_ON, job: job && { name: job.name, status: job.status, started: job.started } });
+    return send(res, 200, { countries: loadStatus(), auth: AUTH_ON, frontendUrl: FRONTEND_URL, job: job && { name: job.name, status: job.status, started: job.started } });
   }
   if (req.method === 'GET' && url.pathname === '/api/job') {
     if (!job) return send(res, 200, { job: null });
