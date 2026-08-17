@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>后台管理 · 真实地址生成器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,6 +37,10 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
       background: var(--bg);
@@ -46,7 +50,7 @@
       background-attachment: fixed;
       color: var(--text);
       min-height: 100vh;
-      padding: 24px 16px 60px;
+      padding: 24px 16px calc(40px + env(safe-area-inset-bottom));
       -webkit-font-smoothing: antialiased;
       line-height: 1.5;
     }
@@ -72,6 +76,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 0;
     }
 
     .brand-logo {
@@ -87,6 +92,10 @@
       flex-shrink: 0;
     }
 
+    .brand-title {
+      min-width: 0;
+    }
+
     .brand-title h1 {
       font-size: 1.35rem;
       font-weight: 700;
@@ -94,6 +103,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .badge-admin {
@@ -104,6 +114,7 @@
       background: rgba(14, 165, 233, 0.15);
       color: var(--primary);
       border: 1px solid rgba(14, 165, 233, 0.3);
+      white-space: nowrap;
     }
 
     .brand-title p {
@@ -116,6 +127,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-shrink: 0;
     }
 
     /* 卡片通用 */
@@ -151,24 +163,30 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .card-head h2 svg {
       color: var(--primary);
+      flex-shrink: 0;
     }
 
     /* 任务状态栏 */
     #jobbar {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 14px;
-      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.3);
       border-radius: var(--radius-md);
       border: 1px solid var(--card-border);
-      margin-bottom: 12px;
       font-size: 0.85rem;
       color: var(--text-sub);
+      max-width: 100%;
+    }
+
+    #jobname {
+      word-break: break-word;
     }
 
     .dot {
@@ -204,13 +222,15 @@
     /* 终端日志窗口 */
     .log-container {
       position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
     }
 
     #log {
       background: #050811;
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 38px 16px 14px 16px;
       height: 260px;
       overflow-y: auto;
       font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
@@ -236,6 +256,7 @@
       right: 8px;
       display: flex;
       gap: 6px;
+      z-index: 2;
     }
 
     /* 表单与输入控件 */
@@ -271,7 +292,7 @@
 
     .input-label {
       font-size: 0.78rem;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-sub);
     }
 
@@ -304,6 +325,7 @@
       border: none;
       border-radius: var(--radius-md);
       padding: 10px 18px;
+      height: 42px;
       cursor: pointer;
       font-size: 0.88rem;
       font-weight: 600;
@@ -352,27 +374,44 @@
     }
 
     .btn-ghost-sm {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--card-border);
       color: var(--text-sub);
-      padding: 4px 10px;
+      padding: 5px 10px;
       font-size: 0.76rem;
       border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
     }
 
     .btn-ghost-sm:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(30, 41, 59, 0.95);
       color: var(--text);
+      border-color: var(--primary);
     }
 
     .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.8rem;
+      height: 36px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+    }
+
+    /* 地址池卡片头部与按钮组 */
+    .pool-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     /* 表格 */
     .table-wrap {
+      width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border-radius: var(--radius-lg);
       border: 1px solid var(--card-border);
       background: rgba(0, 0, 0, 0.2);
@@ -380,6 +419,7 @@
 
     table {
       width: 100%;
+      min-width: 620px;
       border-collapse: collapse;
       font-size: 0.86rem;
       text-align: left;
@@ -388,6 +428,7 @@
     th, td {
       padding: 12px 14px;
       border-bottom: 1px solid var(--card-border);
+      vertical-align: middle;
     }
 
     th {
@@ -418,6 +459,7 @@
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .tag.ok {
@@ -451,35 +493,68 @@
     .cities-text {
       color: var(--text-sub);
       font-size: 0.8rem;
-      max-width: 260px;
+      max-width: 240px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    /* 移动端优化 */
+    /* 移动端全面优化 */
     @media (max-width: 768px) {
       body {
-        padding: 16px 12px 40px;
+        padding: 14px 12px calc(30px + env(safe-area-inset-bottom));
       }
 
       .header {
-        padding-bottom: 16px;
-        margin-bottom: 18px;
+        padding-bottom: 14px;
+        margin-bottom: 16px;
+        gap: 12px;
       }
 
       .brand-title h1 {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
+      }
+
+      .brand-title p {
+        font-size: 0.75rem;
       }
 
       .card {
-        padding: 16px 14px;
+        padding: 14px 12px;
         border-radius: var(--radius-lg);
-        margin-bottom: 16px;
+        margin-bottom: 14px;
       }
 
       .card-head {
-        margin-bottom: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .card-head h2 {
+        font-size: 1rem;
+      }
+
+      #jobbar {
+        width: 100%;
+        display: flex;
+        font-size: 0.8rem;
+        padding: 8px 10px;
+      }
+
+      .pool-head-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        gap: 8px;
+      }
+
+      .pool-head-actions .btn {
+        width: 100%;
+        min-height: 40px;
+        padding: 6px 8px;
+        font-size: 0.8rem;
       }
 
       .add-country-form {
@@ -491,40 +566,29 @@
         width: 100%;
       }
 
-      .input-group-btn .btn {
-        width: 100%;
-        min-height: 42px;
-      }
-
-      .row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-
-      .input-group {
-        width: 100%;
-        min-width: 0;
-        flex: 1 1 auto;
+      input {
+        font-size: 16px !important;
+        height: 44px;
       }
 
       .btn {
+        min-height: 44px;
+        font-size: 0.9rem;
+      }
+
+      .input-group-btn .btn {
         width: 100%;
-        min-height: 42px;
       }
 
       #log {
-        height: 200px;
+        height: 220px;
         font-size: 0.75rem;
+        padding-top: 36px;
       }
 
       th, td {
         padding: 10px 10px;
         font-size: 0.8rem;
-      }
-
-      .cities-text {
-        max-width: 140px;
       }
     }
   </style>
@@ -608,7 +672,7 @@
         </div>
       </div>
       <p style="color:var(--muted);font-size:0.78rem;margin-top:12px;">
-        💡 支持 ISO-3166-1 代码、中文名称或英文名。电话模板与姓名池自动来自开源数据集（未覆盖的字段以占位填充并在日志中提示）；任务成功后自动发布到远端。
+        💡 支持 ISO-3166-1 代码、中文名称或英文名。抓取成功后可在 <code>js/data.js</code> 进一步定制本地姓名池。
       </p>
     </div>
 
@@ -620,7 +684,7 @@
           <span>已注册国家地址池</span>
           <span style="font-size:0.8rem;color:var(--text-sub);font-weight:normal;" id="summary"></span>
         </h2>
-        <div class="row" style="gap:8px;">
+        <div class="pool-head-actions">
           <button class="btn btn-secondary btn-sm" onclick="rebuild([])">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span>重建全部</span>
