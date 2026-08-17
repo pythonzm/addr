@@ -210,6 +210,14 @@ const COUNTRIES = {
     f: ['Maria', 'Angelica', 'Nicole', 'Andrea', 'Camille', 'Bianca', 'Kathryn', 'Jasmine'],
     l: ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Mendoza', 'Bautista', 'Villanueva', 'Aquino'],
   },
+  MY: { // 由 add-country.js 自动生成；部分字段为通用占位，建议按当地习惯完善
+    name: '马来西亚', en: 'Malaysia', lang: 'en', fmt: 'NS',
+    cities: [['Kuala Lumpur', 3.15, 101.69, 0.04], ['Kajang', 2.99, 101.79, 0.04], ['Subang Jaya', 3.05, 101.58, 0.04], ['Klang', 3.04, 101.44, 0.04]],
+    phones: ['+60 123 ### ###'],
+    m: ['Muhamad', 'Ahmad', 'Adam', 'Amar', 'Wan', 'Iman', 'Harraz', 'Izz'],
+    f: ['Nur', 'Wan', 'Nurul', 'Aisyah', 'Maryam', 'Siti', 'Dhia', 'Naura'],
+    l: ['Nguyen', 'Santos', 'Novak', 'Kova', 'Petrov', 'Haddad', 'Okoro', 'Yilmaz'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];
