@@ -18,13 +18,15 @@ node tools/admin-server.js
 
 网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家、以及"发布到远端"（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），任务日志实时显示。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
 
-**认证**：由 `ADMIN_PASSWORD` 环境变量控制——未设置时仅绑定 `127.0.0.1` 免密（本机模式）；设置后开启登录认证（会话 Cookie 12 小时滑动过期，同 IP 连错 5 次锁定 15 分钟），默认改绑 `0.0.0.0`，可用 `HOST` / `PORT` 覆盖。
+**认证与环境变量**：
+- `ADMIN_PASSWORD`：未设置时仅绑定 `127.0.0.1` 免密（本机模式）；设置后开启登录认证（会话 Cookie 12 小时滑动过期，同 IP 连错 5 次锁定 15 分钟），默认改绑 `0.0.0.0`，可用 `HOST` / `PORT` 覆盖。
+- `FRONTEND_URL`（或 `SITE_URL`）：若后台与前台不在同域名或同端口（如前台在 GitHub Pages / 独立域名），可配置此前台访问地址（如 `https://addr.example.com`），后台顶部的「访问前台」按钮将自动跳转至该地址。
 
 ### 部署到 VPS
 
 ```bash
 # 前置：VPS 安装 node ≥ 18 与 git，克隆仓库并配置好可推送的 SSH 密钥
-ADMIN_PASSWORD='你的强密码' node tools/admin-server.js
+ADMIN_PASSWORD='你的强密码' FRONTEND_URL='https://addr.example.com' node tools/admin-server.js
 ```
 
 systemd 常驻示例（`/etc/systemd/system/addr-admin.service`）：
@@ -37,6 +39,7 @@ After=network.target
 [Service]
 WorkingDirectory=/opt/addr
 Environment=ADMIN_PASSWORD=你的强密码
+Environment=FRONTEND_URL=https://addr.example.com
 Environment=HOST=127.0.0.1
 ExecStart=/usr/bin/node tools/admin-server.js
 Restart=on-failure

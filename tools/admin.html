@@ -246,17 +246,27 @@
       align-items: center;
     }
 
+    .add-country-form {
+      display: grid;
+      grid-template-columns: 1fr 100px auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
     .input-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      flex: 1;
-      min-width: 220px;
+      width: 100%;
     }
 
-    .input-group-fixed {
-      flex: 0 0 90px;
-      min-width: 80px;
+    .input-group-cities {
+      width: 100%;
+    }
+
+    .input-group-btn {
+      display: flex;
+      align-items: flex-end;
     }
 
     .input-label {
@@ -275,6 +285,7 @@
       outline: none;
       transition: all 0.2s ease;
       width: 100%;
+      height: 42px;
     }
 
     input:focus {
@@ -471,13 +482,27 @@
         margin-bottom: 12px;
       }
 
+      .add-country-form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .input-group, .input-group-cities, .input-group-btn {
+        width: 100%;
+      }
+
+      .input-group-btn .btn {
+        width: 100%;
+        min-height: 42px;
+      }
+
       .row {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
       }
 
-      .input-group, .input-group-fixed {
+      .input-group {
         width: 100%;
         min-width: 0;
         flex: 1 1 auto;
@@ -524,15 +549,10 @@
       </div>
 
       <div class="header-actions">
-        <div style="display:inline-flex;align-items:center;gap:4px;">
-          <a id="frontBtn" href="/" class="btn btn-secondary btn-sm" target="_blank" rel="noopener" title="点击访问前台页面">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            <span>访问前台</span>
-          </a>
-          <button class="btn btn-secondary btn-sm" style="padding:6px 8px;" onclick="configFrontendUrl()" title="自定义配置前台访问 URL">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
-        </div>
+        <a id="frontBtn" href="/" class="btn btn-secondary btn-sm" target="_blank" rel="noopener" title="点击访问前台页面">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span>访问前台</span>
+        </a>
         <button id="logoutBtn" class="btn btn-secondary btn-sm" style="display:none;" onclick="logout()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span>退出登录</span>
@@ -571,23 +591,23 @@
         </h2>
       </div>
 
-      <div class="row">
+      <div class="add-country-form">
         <div class="input-group">
           <label class="input-label" for="ccode">国家代码或名称</label>
           <input id="ccode" placeholder="如 TH / 泰国 / Thailand">
         </div>
-        <div class="input-group input-group-fixed">
-          <label class="input-label" for="ccities">抽取城市数</label>
+        <div class="input-group input-group-cities">
+          <label class="input-label" for="ccities">城市数</label>
           <input id="ccities" type="number" value="4" min="1" max="8">
         </div>
-        <div style="flex:0 0 auto; display:flex; align-items:flex-end;">
+        <div class="input-group-btn">
           <button class="btn" onclick="addCountry()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             <span>自动添加并抽取地址池</span>
           </button>
         </div>
       </div>
-      <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;">
+      <p style="color:var(--muted);font-size:0.78rem;margin-top:12px;">
         💡 支持 ISO-3166-1 代码、中文名称或英文名。抓取成功后可在 <code>js/data.js</code> 进一步定制本地姓名池。
       </p>
     </div>
@@ -656,35 +676,13 @@
       navigator.clipboard?.writeText(text).then(() => alert('日志已复制到剪贴板'));
     }
 
-    let serverFrontendUrl = '/';
-
-    function configFrontendUrl() {
-      const current = localStorage.getItem('admin_frontend_url') || serverFrontendUrl;
-      const input = prompt('请输入前台页面的访问 URL (例如 https://addr.example.com ，留空则恢复默认)：', current === '/' ? '' : current);
-      if (input === null) return;
-      const val = input.trim();
-      if (!val) {
-        localStorage.removeItem('admin_frontend_url');
-      } else {
-        localStorage.setItem('admin_frontend_url', val);
-      }
-      updateFrontendLink();
-    }
-
-    function updateFrontendLink() {
-      const customUrl = localStorage.getItem('admin_frontend_url');
-      const targetUrl = customUrl || serverFrontendUrl || '/';
-      const frontBtn = document.getElementById('frontBtn');
-      if (frontBtn) {
-        frontBtn.href = targetUrl;
-        frontBtn.title = `访问前台 (${targetUrl}) · 点击旁边设置可修改`;
-      }
-    }
-
     async function refreshStatus() {
       const s = await api('/api/status');
-      if (s.frontendUrl) serverFrontendUrl = s.frontendUrl;
-      updateFrontendLink();
+      const frontBtn = document.getElementById('frontBtn');
+      if (frontBtn && s.frontendUrl) {
+        frontBtn.href = s.frontendUrl;
+        frontBtn.title = `访问前台 (${s.frontendUrl})`;
+      }
       document.getElementById('logoutBtn').style.display = s.auth ? 'inline-flex' : 'none';
       const tb = document.getElementById('tbody');
       tb.innerHTML = s.countries.map(c => {
