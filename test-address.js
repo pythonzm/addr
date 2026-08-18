@@ -4,17 +4,20 @@ const fs = require('fs');
 const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
 const {
   COUNTRIES,
+  POSTAL_FORMATS,
+  POOL_MIN_PUBLISH,
   ADMINISTRATIVE_AREAS,
   ADMINISTRATIVE_AREA_CODES,
-  NO_ADMINISTRATIVE_AREA_CODES,
+  countryHasAdministrativeArea,
   administrativeAreaFromAddress,
   administrativeAreaFromOsmTags,
   administrativeAreaFor,
   administrativeAreaCodeFor,
   formatAdministrativeArea,
   administrativeAreasEquivalent,
+  postalFormatForCountry,
   formatFullAddress,
-} = new Function(dataSource + '; return { COUNTRIES, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, formatFullAddress };')();
+} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress };')();
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
@@ -26,6 +29,7 @@ assert.strictEqual(administrativeAreaFor('US', 34.05, -118.26), 'California');
 assert.strictEqual(administrativeAreaFor('TR', 37.9, 32.5, 'Explicit Province'), 'Explicit Province');
 assert.strictEqual(administrativeAreaFor('SG', 1.32, 103.85, 'Singapore'), '');
 assert.strictEqual(administrativeAreaFor('HK', 22.28, 114.16, 'Hong Kong'), '');
+assert.strictEqual(formatFullAddress({ code: 'SG', line1: '1 Test Road', postcode: '123456', city: 'Singapore', administrativeArea: 'Invented', administrativeAreaCode: 'ST', country: 'Singapore' }), '1 Test Road, 123456 Singapore, Singapore');
 assert.strictEqual(administrativeAreaFor('XX', 0, 0), '');
 
 assert.strictEqual(administrativeAreaFromAddress({ state: 'State', province: 'Province' }), 'State');
@@ -57,11 +61,22 @@ assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路 1 號', pos
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Selçuklu/Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Selçuklu/Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'UK', line1: '20B Maxted Road', postcode: 'SE15 4LF', city: 'London', administrativeArea: 'England', administrativeAreaCode: '', country: 'United Kingdom' }), '20B Maxted Road, London, SE15 4LF, United Kingdom');
+assert.strictEqual(postalFormatForCountry('DE'), 'postcode-city');
+assert.strictEqual(postalFormatForCountry('UK'), 'city-postcode-comma');
+assert.ok(Object.keys(POSTAL_FORMATS).includes(postalFormatForCountry('DE')));
+COUNTRIES.ZZ = { postalFormat: 'city-postcode-comma' };
+assert.strictEqual(formatFullAddress({ code: 'ZZ', line1: '1 Test Road', postcode: '12345', city: 'Example', administrativeArea: '', administrativeAreaCode: '', country: 'Testland' }), '1 Test Road, Example, 12345, Testland');
+COUNTRIES.ZZ = { postalFormat: 'postcode-city', noAdministrativeArea: true };
+assert.strictEqual(countryHasAdministrativeArea('ZZ'), false);
+assert.strictEqual(administrativeAreaFor('ZZ', 1, 1, 'Invented State'), '');
+COUNTRIES.ZZ = { postalFormat: 'typo' };
+assert.throws(() => formatFullAddress({ code: 'ZZ', line1: '1 Test Road', postcode: '12345', city: 'Example', country: 'Testland' }), /Unknown postal format/);
+delete COUNTRIES.ZZ;
 
 for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => name.endsWith('.json'))) {
   const pool = JSON.parse(fs.readFileSync(__dirname + '/data/pool/' + filename, 'utf8'));
   for (const address of pool.addrs) {
-    if (NO_ADMINISTRATIVE_AREA_CODES.has(pool.code)) {
+    if (!countryHasAdministrativeArea(pool.code)) {
       assert.strictEqual(address.a, undefined, `${filename} should not invent a state/province`);
       continue;
     }
@@ -71,6 +86,11 @@ for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => n
       `${filename} ${address.o} should resolve an administrative area`,
     );
   }
+  assert.strictEqual(pool.count, pool.addrs.length, `${filename} count should match addrs length`);
+  assert.ok(pool.count >= POOL_MIN_PUBLISH, `${filename} should meet the publish threshold`);
+}
+for (const code of Object.keys(COUNTRIES)) {
+  assert.ok(fs.existsSync(`${__dirname}/data/pool/${code}.json`), `${code} should have a validated address pool`);
 }
 
 const loadPool = code => JSON.parse(fs.readFileSync(`${__dirname}/data/pool/${code}.json`, 'utf8')).addrs;

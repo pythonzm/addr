@@ -11,6 +11,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { readPendingCountry } = require('./country-pending');
 const { spawn, execFile } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -185,9 +186,13 @@ async function login(e) {
 </script></body></html>`;
 
 // ---------- 业务 ----------
-function loadStatus() {
+function loadCountryData() {
   const src = fs.readFileSync(path.join(ROOT, 'js', 'data.js'), 'utf8');
-  const COUNTRIES = new Function(src + '; return COUNTRIES;')();
+  return new Function(src + '; return { COUNTRIES, POSTAL_FORMATS };')();
+}
+
+function loadStatus() {
+  const { COUNTRIES } = loadCountryData();
   return Object.entries(COUNTRIES).map(([code, c]) => {
     let pool = null;
     try {
@@ -223,6 +228,11 @@ function startJob(name, cmd, args, res, opts = {}) {
 
 // git add/commit/push 串行执行，日志写入当前 job；done(ok) 回调结果
 function runPublishSteps(done) {
+  const pending = readPendingCountry();
+  if (pending) {
+    appendLog(`发布已阻止：新国家 ${pending.code || '未知'} 尚未通过完整建池校验。`);
+    return done(false);
+  }
   const steps = [
     ['git', ['add', '-A']],
     ['git', ['commit', '-m', 'chore: 后台管理更新地址池/国家数据']],
@@ -305,7 +315,8 @@ const server = http.createServer(async (req, res) => {
   if (!isAuthed(req)) return send(res, 401, { error: '未登录或会话已过期' });
 
   if (req.method === 'GET' && url.pathname === '/api/status') {
-    return send(res, 200, { countries: loadStatus(), auth: AUTH_ON, frontendUrl: FRONTEND_URL, job: job && { name: job.name, status: job.status, started: job.started } });
+    const { POSTAL_FORMATS } = loadCountryData();
+    return send(res, 200, { countries: loadStatus(), postalFormats: POSTAL_FORMATS, auth: AUTH_ON, frontendUrl: FRONTEND_URL, job: job && { name: job.name, status: job.status, started: job.started } });
   }
   if (req.method === 'GET' && url.pathname === '/api/job') {
     if (!job) return send(res, 200, { job: null });
@@ -316,16 +327,24 @@ const server = http.createServer(async (req, res) => {
     const { codes, all } = await readBody(req);
     const list = Array.isArray(codes) ? codes.filter(c => /^[A-Z]{2}$/.test(c)) : [];
     if (!list.length && all !== true) return send(res, 400, { error: '请指定国家代码，或显式传 all:true 重建全部' });
-    const args = [path.join('tools', 'build-pool.js'), ...list];
+    const args = [path.join('tools', 'rebuild-pools.js'), ...list];
     return startJob(list.length ? `重建地址池: ${list.join(' ')}` : '重建全部地址池', process.execPath, args, res, { autoPublish: true });
   }
   if (req.method === 'POST' && url.pathname === '/api/add-country') {
-    const { code, cities } = await readBody(req);
+    const pendingCountry = readPendingCountry();
+    if (pendingCountry) return send(res, 409, { error: `尚有待校验国家 ${pendingCountry.code || '未知'}，请先完成地址池校验` });
+    const { code, cities, postalFormat, noAdministrativeArea } = await readBody(req);
     // 支持代码/中文名/英文名，由 add-country.js 负责解析与歧义提示
     const query = String(code || '').trim();
     if (!query || query.length > 50 || /[\r\n"'\\]/.test(query)) return send(res, 400, { error: '请输入国家代码或名称（如 TH / 泰国 / Thailand）' });
     const n = Math.min(Math.max(parseInt(cities, 10) || 4, 1), 8);
-    return startJob(`添加国家: ${query}`, process.execPath, [path.join('tools', 'add-country.js'), query, String(n)], res, { autoPublish: true });
+    const { POSTAL_FORMATS } = loadCountryData();
+    const allowedPostalFormats = new Set(['auto', ...Object.keys(POSTAL_FORMATS)]);
+    const selectedPostalFormat = postalFormat || 'auto';
+    if (!allowedPostalFormats.has(selectedPostalFormat)) return send(res, 400, { error: '不支持的邮政地址格式' });
+    const args = [path.join('tools', 'add-country.js'), query, String(n), `--postal-format=${selectedPostalFormat}`];
+    if (noAdministrativeArea === true) args.push('--no-administrative-area');
+    return startJob(`添加国家: ${query}`, process.execPath, args, res, { autoPublish: true });
   }
   if (req.method === 'POST' && url.pathname === '/api/publish') {
     return publish(res);

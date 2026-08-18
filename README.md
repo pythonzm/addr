@@ -16,7 +16,7 @@ node tools/admin-server.js
 # 打开 http://127.0.0.1:8100
 ```
 
-网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家，任务日志实时显示。**添加国家与重建地址池成功后会自动发布到远端**（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），也保留了手动"发布到远端"按钮。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
+网页面板可完成：查看各国地址池状态（条数/生成日期，数量偏少会标黄）、一键重建单国或全部地址池、自动添加新国家，任务日志实时显示。新增/重建流程会依次执行 **OSM 建池 → GeoNames 行政区补全 → 数据校验**，任一步失败都不会发布。**全部通过后才会自动发布到远端**（git add/commit/push，GitHub Pages / Vercel 随之自动重新部署），也保留了手动"发布到远端"按钮。同一时刻只允许一个任务运行，避免对公共 Overpass 造成压力。
 
 **认证与环境变量**：
 - `ADMIN_PASSWORD`：未设置时仅绑定 `127.0.0.1` 免密（本机模式）；设置后开启登录认证（会话 Cookie 12 小时滑动过期，同 IP 连错 5 次锁定 15 分钟），默认改绑 `0.0.0.0`，可用 `HOST` / `PORT` 覆盖。
@@ -123,7 +123,7 @@ data/pool/*.json      各国离线地址池（真实 OSM 门牌地址）
 ```powershell
 node tools/add-country.js VN          # 添加越南（ISO 3166-1 两位代码）
 node tools/add-country.js TH 5       # 添加泰国，取人口最多的 5 个城市
-node tools/add-country.js RO --no-pool  # 只写入 data.js，不抽地址池
+node tools/add-country.js RO --no-pool  # 仅用于本地分阶段编辑：只写 data.js，不校验也不自动发布
 ```
 
 电话模板与姓名池同样自动生成：手机号段取自 **Google libphonenumber**（全球覆盖，保留真实前缀）；姓名池取自 **popular-names-by-country** 数据集（约百国常用名/姓氏，非拉丁文字自动附罗马化拼写供邮箱生成）。个别字段数据集未覆盖时回退通用占位，并在日志中精确提示需完善的字段。所有网络请求经 curl 发出，遵循 `HTTP(S)_PROXY` 代理变量（代理与直连自动切换）。若抽取结果少于 500 条，说明该国/地区 OSM 门牌覆盖差（如中国大陆），会给出警告供你决定是否保留。

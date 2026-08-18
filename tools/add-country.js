@@ -1,5 +1,5 @@
 // 一键添加新国家：自动获取国家信息、主要城市坐标，生成 data.js 条目并抽取地址池。
-// 用法：node tools/add-country.js <国家> [城市数=4] [--no-pool]
+// 用法：node tools/add-country.js <国家> [城市数=4] [--postal-format=<模板>] [--no-administrative-area] [--no-pool]
 // <国家> 支持：两位/三位代码、中文名、英文名或别名，如 VN / 越南 / Vietnam / 泰国 / Thailand
 // 电话模板与姓名池自动来自开源数据集（Google libphonenumber + popular-names-by-country），
 // 数据集未覆盖或获取失败时回退通用占位池。
@@ -7,10 +7,13 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { readPendingCountry, claimPendingCountry, clearPendingCountry } = require('./country-pending');
 
 const DATA_PATH = path.join(__dirname, '..', 'js', 'data.js');
 const dataSrc = fs.readFileSync(DATA_PATH, 'utf8');
-const COUNTRIES = new Function(dataSrc + '; return COUNTRIES;')();
+const { COUNTRIES, POSTAL_FORMATS, postalFormatForCountry } = new Function(
+  dataSrc + '; return { COUNTRIES, POSTAL_FORMATS, postalFormatForCountry };'
+)();
 
 // ISO 639-3 -> Nominatim 用的语言代码（常见语言，未覆盖的回退 en）
 const LANG_MAP = {
@@ -186,10 +189,17 @@ function resolveCountry(all, query) {
 (async () => {
   const args = process.argv.slice(2).filter(a => a !== '--no-pool');
   const noPool = process.argv.includes('--no-pool');
+  const postalArg = process.argv.find(a => a.startsWith('--postal-format='));
+  const noAdministrativeArea = process.argv.includes('--no-administrative-area');
   const query = (args[0] || '').trim();
   const cityCount = parseInt(args[1], 10) || 4;
   if (!query) {
     console.log('用法: node tools/add-country.js <国家：代码/中文名/英文名> [城市数=4] [--no-pool]');
+    process.exit(1);
+  }
+  const existingPending = readPendingCountry();
+  if (existingPending) {
+    console.log(`尚有待校验国家 ${existingPending.code || '未知'}，请先运行 tools/rebuild-pools.js ${existingPending.code || ''} 完成或清理该任务。`);
     process.exit(1);
   }
 
@@ -219,7 +229,14 @@ function resolveCountry(all, query) {
   const langKey = Object.keys(info.languages || {})[0];
   const lang = LANG_MAP[langKey] || 'en';
   const fmt = (lang === 'en' || lang === 'fr') ? 'NS' : (lang === 'es' || lang === 'pt') ? 'S,N' : 'SN';
-  console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  地址格式 ${fmt}`);
+  const allowedPostalFormats = new Set(Object.keys(POSTAL_FORMATS));
+  const requestedPostalFormat = postalArg?.split('=')[1] || 'auto';
+  if (requestedPostalFormat !== 'auto' && !allowedPostalFormats.has(requestedPostalFormat)) {
+    console.log(`  不支持的邮政格式：${requestedPostalFormat}`);
+    process.exit(1);
+  }
+  const postalFormat = requestedPostalFormat === 'auto' ? postalFormatForCountry(code) : requestedPostalFormat;
+  console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  门牌格式 ${fmt}  邮政格式 ${postalFormat}`);
 
   console.log(`[2/5] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
   let cities = await overpassCities(iso, cityCount);
@@ -259,7 +276,7 @@ function resolveCountry(all, query) {
     ? '电话与姓名池均来自开源数据集，无需手动补充。'
     : `${missing.join('、')}数据集未覆盖（已填占位，如需更真实可在 data.js 中完善），其余字段已自动生成。`;
   const entry = `  ${code}: { // 由 add-country.js 自动生成${full ? '（电话/姓名池来自开源数据集）' : '；部分字段为通用占位，建议按当地习惯完善'}
-    name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}',
+    name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}', postalFormat: '${postalFormat}',${noAdministrativeArea ? ' noAdministrativeArea: true,' : ''}
     cities: [${cityLines}],
     phones: ${phones},
     m: ${arr(gen.m || GENERIC_NAMES.m)},
@@ -267,26 +284,35 @@ function resolveCountry(all, query) {
     l: ${arr(gen.l || GENERIC_NAMES.l)},${roman}
   },
 `;
-  // 插入到 COUNTRIES 结尾（EMAIL_DOMAINS 之前最后一个 "};"），对 CRLF/LF 行尾均兼容
-  const domIdx = dataSrc.lastIndexOf('const EMAIL_DOMAINS');
-  const closeIdx = domIdx > 0 ? dataSrc.lastIndexOf('};', domIdx) : -1;
+  // 使用显式标记找 COUNTRIES 结尾，避免被后续函数/对象中的 "};" 误导。
+  const markerIdx = dataSrc.indexOf('// END COUNTRIES');
+  const closeIdx = markerIdx > 0 ? dataSrc.lastIndexOf('};', markerIdx) : -1;
   if (closeIdx < 0) {
     console.log('  未找到 data.js 插入点（COUNTRIES 结尾），请手动插入以下内容：\n' + entry);
+    process.exit(1);
+  }
+  if (!claimPendingCountry(code)) {
+    console.log('另一个新增国家任务已抢先进入校验阶段，本次未写入任何配置。');
     process.exit(1);
   }
   fs.writeFileSync(DATA_PATH, dataSrc.slice(0, closeIdx) + entry + dataSrc.slice(closeIdx));
   console.log(`  已添加 ${code} 条目`);
 
   if (noPool) {
-    console.log('[5/5] 跳过地址池抽取（--no-pool）。之后可运行: node tools/build-pool.js ' + code);
+    console.log('[5/5] 跳过地址池抽取（--no-pool）。之后可运行: node tools/rebuild-pools.js ' + code);
     console.log('  ' + genNote);
     return;
   }
-  console.log(`[5/5] 抽取 ${code} 地址池（数分钟）…`);
-  const r = spawnSync(process.execPath, [path.join(__dirname, 'build-pool.js'), code], { stdio: 'inherit' });
+  console.log(`[5/5] 抽取 ${code} 地址池、补齐行政区并校验（数分钟）…`);
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'rebuild-pools.js'), code], { stdio: 'inherit' });
   if (r.status !== 0) {
-    console.log('地址池抽取失败，可稍后重试: node tools/build-pool.js ' + code);
-    return;
+    console.log('地址池构建/行政区补全/校验失败，未发布。可稍后重试: node tools/rebuild-pools.js ' + code);
+    fs.writeFileSync(DATA_PATH, dataSrc);
+    const poolPath = path.join(__dirname, '..', 'data', 'pool', code + '.json');
+    if (fs.existsSync(poolPath)) fs.unlinkSync(poolPath);
+    clearPendingCountry();
+    console.log(`  已回滚 ${code} 的国家配置和不完整地址池。`);
+    process.exit(1);
   }
   try {
     const pool = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'pool', code + '.json'), 'utf8'));

@@ -269,7 +269,7 @@
 
     .add-country-form {
       display: grid;
-      grid-template-columns: 1fr 100px auto;
+      grid-template-columns: 1fr 100px minmax(190px, 240px) 150px auto;
       gap: 12px;
       align-items: flex-end;
     }
@@ -296,7 +296,7 @@
       color: var(--text-sub);
     }
 
-    input {
+    input, select {
       background: rgba(9, 13, 22, 0.8);
       border: 1px solid var(--card-border);
       border-radius: var(--radius-md);
@@ -566,7 +566,7 @@
         width: 100%;
       }
 
-      input {
+      input, select {
         font-size: 16px !important;
         height: 44px;
       }
@@ -664,6 +664,15 @@
           <label class="input-label" for="ccities">城市数</label>
           <input id="ccities" type="number" value="4" min="1" max="8">
         </div>
+        <div class="input-group">
+          <label class="input-label" for="cpostal">完整地址邮政格式</label>
+          <select id="cpostal">
+            <option value="auto">按国家规则自动</option>
+          </select>
+        </div>
+        <div class="input-group" style="justify-content:flex-end;">
+          <label class="input-label"><input id="cnoarea" type="checkbox" style="width:auto;height:auto;"> 该国无州/省层级</label>
+        </div>
         <div class="input-group-btn">
           <button class="btn" onclick="addCountry()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -672,7 +681,7 @@
         </div>
       </div>
       <p style="color:var(--muted);font-size:0.78rem;margin-top:12px;">
-        💡 支持 ISO-3166-1 代码、中文名称或英文名。抓取成功后可在 <code>js/data.js</code> 进一步定制本地姓名池。
+        💡 将自动完成 OSM 建池、GeoNames 行政区补全和数据校验；任一步失败都不会自动发布。不确定时使用“自动”。
       </p>
     </div>
 
@@ -748,6 +757,11 @@
         frontBtn.title = `访问前台 (${s.frontendUrl})`;
       }
       document.getElementById('logoutBtn').style.display = s.auth ? 'inline-flex' : 'none';
+      const postalSelect = document.getElementById('cpostal');
+      const selectedPostalFormat = postalSelect.value;
+      postalSelect.innerHTML = '<option value="auto">按国家规则自动</option>' + Object.entries(s.postalFormats || {})
+        .map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+      if ([...postalSelect.options].some(option => option.value === selectedPostalFormat)) postalSelect.value = selectedPostalFormat;
       const tb = document.getElementById('tbody');
       tb.innerHTML = s.countries.map(c => {
         const pool = c.pool
@@ -801,8 +815,10 @@
     function addCountry() {
       const code = document.getElementById('ccode').value.trim();
       const cities = document.getElementById('ccities').value;
+      const postalFormat = document.getElementById('cpostal').value;
+      const noAdministrativeArea = document.getElementById('cnoarea').checked;
       if (!code) return alert('请输入国家代码或名称，如 TH / 泰国 / Thailand');
-      run('/api/add-country', { code, cities });
+      run('/api/add-country', { code, cities, postalFormat, noAdministrativeArea });
     }
 
     refreshStatus();

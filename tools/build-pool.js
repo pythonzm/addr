@@ -8,8 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const dataSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
-const { COUNTRIES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromOsmTags } = new Function(
-  dataSrc + '; return { COUNTRIES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromOsmTags };'
+const { COUNTRIES, POOL_MIN_PUBLISH, countryHasAdministrativeArea, administrativeAreaFromOsmTags } = new Function(
+  dataSrc + '; return { COUNTRIES, POOL_MIN_PUBLISH, countryHasAdministrativeArea, administrativeAreaFromOsmTags };'
 )();
 
 const ENDPOINTS = [
@@ -74,7 +74,7 @@ function extract(el, cityName, strict, code) {
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
   if (lat == null || lng == null) return null;
-  const a = NO_ADMINISTRATIVE_AREA_CODES.has(code) ? '' : administrativeAreaFromOsmTags(t);
+  const a = countryHasAdministrativeArea(code) ? administrativeAreaFromOsmTags(t) : '';
   return {
     n, s, p, c,
     ...(a ? { a, as: 'osm' } : {}),
@@ -130,6 +130,9 @@ async function buildCountry(code) {
   }
 
   const addrs = shuffle([...pool.values()]).slice(0, TARGET);
+  if (addrs.length < POOL_MIN_PUBLISH) {
+    throw new Error(`仅抽取到 ${addrs.length} 条，低于发布门槛 ${POOL_MIN_PUBLISH}`);
+  }
   const out = { code, generated: new Date().toISOString().slice(0, 10), count: addrs.length, addrs };
   fs.writeFileSync(path.join(OUT_DIR, code + '.json'), JSON.stringify(out));
   console.log(`${code} 完成: ${addrs.length} 条 -> data/pool/${code}.json`);
@@ -140,18 +143,21 @@ async function buildCountry(code) {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const codes = process.argv.slice(2).length ? process.argv.slice(2).map(s => s.toUpperCase()) : Object.keys(COUNTRIES);
   const summary = {};
+  let failed = false;
   for (const code of codes) {
-    if (!COUNTRIES[code]) { console.log('未知国家代码: ' + code); continue; }
+    if (!COUNTRIES[code]) { console.log('未知国家代码: ' + code); failed = true; continue; }
     console.log(`==== ${code} ${COUNTRIES[code].en} ====`);
     try {
       summary[code] = await buildCountry(code);
     } catch (e) {
       console.log(`${code} 失败: ${e.message}`);
       summary[code] = 0;
+      failed = true;
     }
     await sleep(1500);
   }
   console.log('\n==== 汇总 ====');
   for (const [c, n] of Object.entries(summary)) console.log(`${c}: ${n} 条${n < MIN_OK ? '  ⚠ 偏少' : ''}`);
   console.log('\n提示：重建后请运行 tools/backfill-administrative-areas.js 补齐未直接标注的州/省/地区。');
+  if (failed) process.exitCode = 1;
 })();

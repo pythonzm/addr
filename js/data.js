@@ -149,7 +149,7 @@ const COUNTRIES = {
     lr: ['chen', 'lin', 'huang', 'zhang', 'li', 'wang', 'wu', 'liu'],
   },
   SG: {
-    flag: '🇸🇬', name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS',
+    flag: '🇸🇬', name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS', noAdministrativeArea: true,
     cities: [['Singapore', 1.32, 103.85, .07]],
     phones: ['+65 8### ####', '+65 9### ####'],
     m: ['Wei Ming', 'Jun Jie', 'Kai Wen', 'Zhi Hao', 'Arjun', 'Ryan', 'Ethan', 'Daniel'],
@@ -181,7 +181,7 @@ const COUNTRIES = {
     l: ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'],
   },
   HK: {
-    name: '中国香港', en: 'Hong Kong', lang: 'en', fmt: 'NS',
+    name: '中国香港', en: 'Hong Kong', lang: 'en', fmt: 'NS', noAdministrativeArea: true,
     cities: [['Hong Kong', 22.28, 114.16, 0.05], ['Kowloon', 22.32, 114.18, 0.04], ['Sha Tin', 22.38, 114.19, 0.03], ['Tuen Mun', 22.39, 113.97, 0.03]],
     phones: ['+852 5### ####', '+852 6### ####', '+852 9### ####'],
     m: ['志明', '家輝', '偉業', '俊傑', '國榮', '嘉豪', '子軒', '浩然'],
@@ -227,6 +227,30 @@ const COUNTRIES = {
     l: ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk'],
   },
 };
+// END COUNTRIES
+
+const POSTAL_FORMATS = {
+  'postcode-city': '街道, 邮编 城市, 国家',
+  'city-postcode-comma': '街道, 城市, 邮编, 国家',
+  'city-area-postcode-comma': '街道, 城市, 州代码 邮编, 国家',
+  'city-area-postcode': '街道, 城市 州代码 邮编, 国家',
+  brazil: '巴西：城市 - UF, 邮编',
+  japan: '日本：〒邮编 都道府县 城市',
+  'postcode-area-city': '街道, 邮编 行政区 城市, 国家',
+  'postcode-city-area': '街道, 邮编 城市 行政区, 国家',
+};
+const POOL_MIN_PUBLISH = 100;
+
+function postalFormatForCountry(code) {
+  if (code === 'US' || code === 'CA') return 'city-area-postcode-comma';
+  if (code === 'AU') return 'city-area-postcode';
+  if (code === 'BR') return 'brazil';
+  if (code === 'JP') return 'japan';
+  if (code === 'UK') return 'city-postcode-comma';
+  if (['KR', 'TW', 'VN'].includes(code)) return 'postcode-area-city';
+  if (['TH', 'PH', 'MY', 'TR'].includes(code)) return 'postcode-city-area';
+  return 'postcode-city';
+}
 
 // 与各国 cities 数组按下标对应，作为旧地址池缺少行政区时的坐标兜底。
 // 行政区统一使用适合国际表单 State / Province / Region 字段的英文名称。
@@ -258,7 +282,9 @@ const ADMINISTRATIVE_AREAS = {
   MY: ['Kuala Lumpur', 'Selangor', 'Selangor', 'Selangor'],
   TR: ['Ankara', 'Adana', 'Gaziantep', 'Konya'],
 };
-const NO_ADMINISTRATIVE_AREA_CODES = new Set(['HK', 'SG']);
+function countryHasAdministrativeArea(code) {
+  return !COUNTRIES[code]?.noAdministrativeArea;
+}
 const ADMINISTRATIVE_AREA_CODES = {
   US: {
     Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE',
@@ -327,7 +353,7 @@ function administrativeAreaFromOsmTags(tags = {}) {
 }
 
 function administrativeAreaFor(code, lat, lng, explicit = '') {
-  if (NO_ADMINISTRATIVE_AREA_CODES.has(code)) return '';
+  if (!countryHasAdministrativeArea(code)) return '';
   if (explicit) return explicit;
   const country = COUNTRIES[code];
   const areas = ADMINISTRATIVE_AREAS[code];
@@ -348,27 +374,31 @@ function administrativeAreaFor(code, lat, lng, explicit = '') {
 }
 
 function formatFullAddress({ code, line1, postcode, city, administrativeArea, administrativeAreaCode, country }) {
-  const area = administrativeAreasEquivalent(code, city, administrativeArea) ? '' : administrativeArea;
-  const areaLabel = administrativeAreaCode || area;
+  const hasAdministrativeArea = countryHasAdministrativeArea(code);
+  const area = hasAdministrativeArea && !administrativeAreasEquivalent(code, city, administrativeArea) ? administrativeArea : '';
+  const areaLabel = hasAdministrativeArea ? (administrativeAreaCode || area) : '';
   let locality;
   let localityParts;
-  if (code === 'US' || code === 'CA') {
+  const postalFormat = COUNTRIES[code]?.postalFormat || postalFormatForCountry(code);
+  if (postalFormat === 'city-area-postcode-comma') {
     locality = [city, [areaLabel, postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  } else if (code === 'AU') {
+  } else if (postalFormat === 'city-area-postcode') {
     locality = [city, areaLabel, postcode].filter(Boolean).join(' ');
-  } else if (code === 'BR') {
+  } else if (postalFormat === 'brazil') {
     const cityAndState = [city, areaLabel].filter(Boolean).join(' - ');
     localityParts = [cityAndState, postcode];
-  } else if (code === 'JP') {
+  } else if (postalFormat === 'japan') {
     locality = [postcode ? `〒${postcode}` : '', area, city].filter(Boolean).join(' ');
-  } else if (code === 'UK') {
+  } else if (postalFormat === 'city-postcode-comma') {
     locality = [city, postcode].filter(Boolean).join(', ');
-  } else if (['KR', 'TW', 'VN'].includes(code)) {
+  } else if (postalFormat === 'postcode-area-city') {
     locality = [postcode, area, city].filter(Boolean).join(' ');
-  } else if (['TH', 'PH', 'MY', 'TR'].includes(code)) {
+  } else if (postalFormat === 'postcode-city-area') {
     locality = [postcode, city, area].filter(Boolean).join(' ');
-  } else {
+  } else if (postalFormat === 'postcode-city') {
     locality = [postcode, city].filter(Boolean).join(' ');
+  } else {
+    throw new Error(`Unknown postal format: ${postalFormat}`);
   }
   return [line1, ...(localityParts || [locality]), country].filter(Boolean).join(', ');
 }

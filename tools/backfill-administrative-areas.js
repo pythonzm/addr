@@ -24,8 +24,8 @@ if (!citiesFile || !adminFile) {
 
 const poolDir = path.join(__dirname, '..', 'data', 'pool');
 const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
-const { NO_ADMINISTRATIVE_AREA_CODES } = new Function(
-  dataSource + '; return { NO_ADMINISTRATIVE_AREA_CODES };'
+const { countryHasAdministrativeArea } = new Function(
+  dataSource + '; return { countryHasAdministrativeArea };'
 )();
 const poolCodes = codes.length
   ? codes
@@ -131,7 +131,7 @@ for (const code of poolCodes) {
   const addrs = [];
   for (const address of pool.addrs || []) {
     // Hong Kong 和 Singapore 没有供国际地址表单填写的州/省层级。
-    if (NO_ADMINISTRATIVE_AREA_CODES.has(code)) {
+    if (!countryHasAdministrativeArea(code)) {
       delete address.a;
       delete address.as;
       addrs.push(address);
