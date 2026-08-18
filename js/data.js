@@ -259,6 +259,35 @@ const ADMINISTRATIVE_AREAS = {
   TR: ['Ankara', 'Adana', 'Gaziantep', 'Konya'],
 };
 const NO_ADMINISTRATIVE_AREA_CODES = new Set(['HK', 'SG']);
+const ADMINISTRATIVE_AREA_CODES = {
+  US: {
+    Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE',
+    Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY',
+    Louisiana: 'LA', Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS', Missouri: 'MO',
+    Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+    'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI',
+    'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA', Washington: 'WA',
+    'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY', 'District of Columbia': 'DC',
+  },
+  CA: {
+    Alberta: 'AB', 'British Columbia': 'BC', Manitoba: 'MB', 'New Brunswick': 'NB', 'Newfoundland and Labrador': 'NL',
+    'Northwest Territories': 'NT', 'Nova Scotia': 'NS', Nunavut: 'NU', Ontario: 'ON', 'Prince Edward Island': 'PE', Quebec: 'QC',
+    Saskatchewan: 'SK', Yukon: 'YT',
+  },
+  AU: {
+    'Australian Capital Territory': 'ACT', 'New South Wales': 'NSW', 'Northern Territory': 'NT', Queensland: 'QLD',
+    'South Australia': 'SA', Tasmania: 'TAS', Victoria: 'VIC', 'Western Australia': 'WA',
+  },
+};
+
+function administrativeAreaCodeFor(code, administrativeArea) {
+  return ADMINISTRATIVE_AREA_CODES[code]?.[administrativeArea] || '';
+}
+
+function formatAdministrativeArea(administrativeArea, administrativeAreaCode) {
+  if (!administrativeArea) return '';
+  return `${administrativeArea}${administrativeAreaCode ? ` (${administrativeAreaCode})` : ''}`;
+}
 
 function administrativeAreaFromAddress(address = {}) {
   return address.state || address.province || address.region || '';
@@ -291,6 +320,24 @@ function administrativeAreaFor(code, lat, lng, explicit = '') {
     }
   });
   return areas[nearest] || '';
+}
+
+function formatFullAddress({ code, line1, postcode, city, administrativeArea, administrativeAreaCode, country }) {
+  const area = administrativeArea && administrativeArea !== city ? administrativeArea : '';
+  const areaLabel = administrativeAreaCode || area;
+  let locality;
+  if (code === 'US' || code === 'CA') {
+    locality = [city, [areaLabel, postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  } else if (code === 'AU') {
+    locality = [city, areaLabel, postcode].filter(Boolean).join(' ');
+  } else if (['JP', 'KR', 'TW', 'VN'].includes(code)) {
+    locality = [postcode, area, city].filter(Boolean).join(' ');
+  } else if (['BR', 'TH', 'PH', 'MY', 'TR'].includes(code)) {
+    locality = [postcode, city, area].filter(Boolean).join(' ');
+  } else {
+    locality = [postcode, city].filter(Boolean).join(' ');
+  }
+  return [line1, locality, country].filter(Boolean).join(', ');
 }
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];

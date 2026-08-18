@@ -9,7 +9,10 @@ const {
   administrativeAreaFromAddress,
   administrativeAreaFromOsmTags,
   administrativeAreaFor,
-} = new Function(dataSource + '; return { COUNTRIES, ADMINISTRATIVE_AREAS, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor };')();
+  administrativeAreaCodeFor,
+  formatAdministrativeArea,
+  formatFullAddress,
+} = new Function(dataSource + '; return { COUNTRIES, ADMINISTRATIVE_AREAS, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, formatFullAddress };')();
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
@@ -29,6 +32,16 @@ assert.strictEqual(administrativeAreaFromAddress({ region: 'Region' }), 'Region'
 assert.strictEqual(administrativeAreaFromAddress({ county: 'District' }), '');
 assert.strictEqual(administrativeAreaFromOsmTags({ 'addr:state': 'Konya', 'addr:county': 'Selçuklu' }), 'Konya');
 assert.strictEqual(administrativeAreaFromOsmTags({ 'addr:county': 'Selçuklu' }), '');
+assert.strictEqual(administrativeAreaCodeFor('US', 'California'), 'CA');
+assert.strictEqual(administrativeAreaCodeFor('CA', 'Ontario'), 'ON');
+assert.strictEqual(administrativeAreaCodeFor('AU', 'New South Wales'), 'NSW');
+assert.strictEqual(administrativeAreaCodeFor('US', 'Texas'), 'TX');
+assert.strictEqual(administrativeAreaCodeFor('CA', 'Nova Scotia'), 'NS');
+assert.strictEqual(administrativeAreaCodeFor('AU', 'Tasmania'), 'TAS');
+assert.strictEqual(formatAdministrativeArea('California', 'CA'), 'California (CA)');
+assert.strictEqual(formatFullAddress({ code: 'US', line1: '4444 Burns Avenue', postcode: '90029', city: 'Los Angeles', administrativeArea: 'California', administrativeAreaCode: 'CA', country: 'United States' }), '4444 Burns Avenue, Los Angeles, CA 90029, United States');
+assert.strictEqual(formatFullAddress({ code: 'CA', line1: '10 Main Street', postcode: 'M5V 2T6', city: 'Toronto', administrativeArea: 'Ontario', administrativeAreaCode: 'ON', country: 'Canada' }), '10 Main Street, Toronto, ON M5V 2T6, Canada');
+assert.strictEqual(formatFullAddress({ code: 'AU', line1: '10 George Street', postcode: '2000', city: 'Sydney', administrativeArea: 'New South Wales', administrativeAreaCode: 'NSW', country: 'Australia' }), '10 George Street, Sydney NSW 2000, Australia');
 
 for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => name.endsWith('.json'))) {
   const pool = JSON.parse(fs.readFileSync(__dirname + '/data/pool/' + filename, 'utf8'));
@@ -46,6 +59,11 @@ for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => n
 }
 
 const loadPool = code => JSON.parse(fs.readFileSync(`${__dirname}/data/pool/${code}.json`, 'utf8')).addrs;
+for (const code of ['US', 'CA', 'AU']) {
+  for (const area of new Set(loadPool(code).map(address => address.a))) {
+    assert.ok(administrativeAreaCodeFor(code, area), `${code} ${area} should have a postal abbreviation`);
+  }
+}
 assert.ok(loadPool('US').filter(address => ['Weehawken', 'West New York'].includes(address.c)).every(address => address.a === 'New Jersey'));
 assert.ok(loadPool('TW').filter(address => address.c === '新北市').every(address => address.a === 'New Taipei City'));
 // 城市标签可能本身有误；坐标位于吉隆坡的 Perai 记录应按坐标归属，而不是按远距离同名地点。

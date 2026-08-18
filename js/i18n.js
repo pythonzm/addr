@@ -76,7 +76,7 @@ const I18N = {
     toast_no_data: '暂无保存数据可导出',
     toast_csv: '已成功导出 CSV 文件',
     toast_json: '已成功导出 JSON 文件',
-    csv_headers: ['备注', '国家/地区', '姓名', '性别', '邮箱', '电话', '完整地址', '街道门牌', '城市', '州/省/地区', '邮编', '纬度', '经度', 'OSM链接', '保存时间'],
+    csv_headers: ['备注', '国家/地区', '姓名', '性别', '邮箱', '电话', '完整地址', '街道门牌', '城市', '州/省/地区', '州/省代码', '邮编', '纬度', '经度', 'OSM链接', '保存时间'],
     err_no_addr: '该区域暂未取到带门牌的地址，请再试一次',
   },
   'zh-TW': {
@@ -152,7 +152,7 @@ const I18N = {
     toast_no_data: '尚無儲存資料可匯出',
     toast_csv: '已成功匯出 CSV 檔案',
     toast_json: '已成功匯出 JSON 檔案',
-    csv_headers: ['備註', '國家/地區', '姓名', '性別', '電子郵件', '電話', '完整地址', '街道門牌', '城市', '州/省/地區', '郵遞區號', '緯度', '經度', 'OSM連結', '儲存時間'],
+    csv_headers: ['備註', '國家/地區', '姓名', '性別', '電子郵件', '電話', '完整地址', '街道門牌', '城市', '州/省/地區', '州/省代碼', '郵遞區號', '緯度', '經度', 'OSM連結', '儲存時間'],
     err_no_addr: '該區域暫未取得帶門牌的地址，請再試一次',
   },
   'en': {
@@ -228,7 +228,7 @@ const I18N = {
     toast_no_data: 'No saved data to export',
     toast_csv: 'CSV exported',
     toast_json: 'JSON exported',
-    csv_headers: ['Note', 'Country', 'Name', 'Gender', 'Email', 'Phone', 'Full Address', 'Street', 'City', 'State / Province / Region', 'Postcode', 'Lat', 'Lng', 'OSM URL', 'Saved At'],
+    csv_headers: ['Note', 'Country', 'Name', 'Gender', 'Email', 'Phone', 'Full Address', 'Street', 'City', 'State / Province / Region', 'State / Province Code', 'Postcode', 'Lat', 'Lng', 'OSM URL', 'Saved At'],
     err_no_addr: 'No house-number address found in this area, please try again',
   },
   'ja': {
@@ -304,7 +304,7 @@ const I18N = {
     toast_no_data: 'エクスポートできるデータがありません',
     toast_csv: 'CSV をエクスポートしました',
     toast_json: 'JSON をエクスポートしました',
-    csv_headers: ['メモ', '国・地域', '氏名', '性別', 'メール', '電話', '完全な住所', '番地・通り', '都市', '州/都道府県/地域', '郵便番号', '緯度', '経度', 'OSMリンク', '保存日時'],
+    csv_headers: ['メモ', '国・地域', '氏名', '性別', 'メール', '電話', '完全な住所', '番地・通り', '都市', '州/都道府県/地域', '州/都道府県コード', '郵便番号', '緯度', '経度', 'OSMリンク', '保存日時'],
     err_no_addr: 'この地域では番地付き住所が見つかりませんでした。もう一度お試しください',
   },
   'ko': {
@@ -380,7 +380,7 @@ const I18N = {
     toast_no_data: '내보낼 저장 데이터가 없습니다',
     toast_csv: 'CSV 내보내기 완료',
     toast_json: 'JSON 내보내기 완료',
-    csv_headers: ['메모', '국가/지역', '이름', '성별', '이메일', '전화', '전체 주소', '도로명·번지', '도시', '주/도/지역', '우편번호', '위도', '경도', 'OSM 링크', '저장 시간'],
+    csv_headers: ['메모', '국가/지역', '이름', '성별', '이메일', '전화', '전체 주소', '도로명·번지', '도시', '주/도/지역', '주/도 코드', '우편번호', '위도', '경도', 'OSM 링크', '저장 시간'],
     err_no_addr: '이 지역에서 번지가 있는 주소를 찾지 못했습니다. 다시 시도하세요',
   },
 };
