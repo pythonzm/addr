@@ -203,7 +203,7 @@ const COUNTRIES = {
     lr: ['jaidee', 'suksawat', 'wongsawat', 'srisuk', 'boonmee', 'thongdee', 'rattanakul', 'pongpan'],
   },
   PH: { // 由 add-country.js 自动生成（电话/姓名池由 AI 补全）
-    name: '菲律宾', en: 'Philippines', lang: 'en', fmt: 'NS',
+    name: '菲律宾', en: 'Philippines', lang: 'en', fmt: 'NS', postalFormat: 'city-area-postcode-comma',
     cities: [['Quezon City', 14.65, 121.05, 0.05], ['Manila', 14.59, 120.98, 0.04], ['Antipolo', 14.59, 121.18, 0.04], ['Taguig', 14.53, 121.07, 0.04]],
     phones: ['+63 917 ### ####', '+63 918 ### ####', '+63 919 ### ####', '+63 920 ### ####', '+63 915 ### ####'],
     m: ['Jose', 'Juan', 'Miguel', 'Angelo', 'Rafael', 'Christian', 'Joshua', 'Marco'],
@@ -261,7 +261,7 @@ function postalFormatForCountry(code) {
   if (code === 'JP') return 'japan';
   if (code === 'UK') return 'city-postcode-comma';
   if (['KR', 'TW', 'VN'].includes(code)) return 'postcode-area-city';
-  if (['TH', 'PH', 'MY', 'TR'].includes(code)) return 'postcode-city-area';
+  if (['TH', 'MY', 'TR'].includes(code)) return 'postcode-city-area';
   return 'postcode-city';
 }
 
