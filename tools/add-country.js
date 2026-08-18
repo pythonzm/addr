@@ -1,5 +1,5 @@
 // 一键添加新国家：自动获取国家信息、主要城市坐标，生成 data.js 条目并抽取地址池。
-// 用法：node tools/add-country.js <国家> [城市数=4] [--postal-format=<模板>] [--no-administrative-area] [--no-pool]
+// 用法：node tools/add-country.js <国家> [城市数=4] [--no-pool]
 // <国家> 支持：两位/三位代码、中文名、英文名或别名，如 VN / 越南 / Vietnam / 泰国 / Thailand
 // 电话模板与姓名池自动来自开源数据集（Google libphonenumber + popular-names-by-country），
 // 数据集未覆盖或获取失败时回退通用占位池。
@@ -8,11 +8,12 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { readPendingCountry, claimPendingCountry, clearPendingCountry } = require('./country-pending');
+const { deriveAddressProfile } = require('./address-metadata');
 
 const DATA_PATH = path.join(__dirname, '..', 'js', 'data.js');
 const dataSrc = fs.readFileSync(DATA_PATH, 'utf8');
-const { COUNTRIES, POSTAL_FORMATS, postalFormatForCountry } = new Function(
-  dataSrc + '; return { COUNTRIES, POSTAL_FORMATS, postalFormatForCountry };'
+const { COUNTRIES, POSTAL_FORMATS } = new Function(
+  dataSrc + '; return { COUNTRIES, POSTAL_FORMATS };'
 )();
 
 // ISO 639-3 -> Nominatim 用的语言代码（常见语言，未覆盖的回退 en）
@@ -189,8 +190,6 @@ function resolveCountry(all, query) {
 (async () => {
   const args = process.argv.slice(2).filter(a => a !== '--no-pool');
   const noPool = process.argv.includes('--no-pool');
-  const postalArg = process.argv.find(a => a.startsWith('--postal-format='));
-  const noAdministrativeArea = process.argv.includes('--no-administrative-area');
   const query = (args[0] || '').trim();
   const cityCount = parseInt(args[1], 10) || 4;
   if (!query) {
@@ -229,14 +228,18 @@ function resolveCountry(all, query) {
   const langKey = Object.keys(info.languages || {})[0];
   const lang = LANG_MAP[langKey] || 'en';
   const fmt = (lang === 'en' || lang === 'fr') ? 'NS' : (lang === 'es' || lang === 'pt') ? 'S,N' : 'SN';
-  const allowedPostalFormats = new Set(Object.keys(POSTAL_FORMATS));
-  const requestedPostalFormat = postalArg?.split('=')[1] || 'auto';
-  if (requestedPostalFormat !== 'auto' && !allowedPostalFormats.has(requestedPostalFormat)) {
-    console.log(`  不支持的邮政格式：${requestedPostalFormat}`);
+  console.log('  读取 Google libaddressinput 邮政元数据…');
+  let addressProfile;
+  try {
+    const metadata = await fetchJson(`https://chromium-i18n.appspot.com/ssl-address/data/${iso}`);
+    addressProfile = deriveAddressProfile(code, metadata);
+    if (!POSTAL_FORMATS[addressProfile.postalFormat]) throw new Error(`程序尚不支持邮政格式：${addressProfile.postalFormat}`);
+  } catch (error) {
+    console.log('  无法确认该国邮政格式/行政区层级，已停止：' + error.message);
     process.exit(1);
   }
-  const postalFormat = requestedPostalFormat === 'auto' ? postalFormatForCountry(code) : requestedPostalFormat;
-  console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  门牌格式 ${fmt}  邮政格式 ${postalFormat}`);
+  console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  门牌格式 ${fmt}  邮政格式 ${addressProfile.postalFormat}`);
+  console.log(`  州/省/地区层级：${addressProfile.hasAdministrativeArea ? `有（${addressProfile.administrativeAreaType}）` : '无'}`);
 
   console.log(`[2/5] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
   let cities = await overpassCities(iso, cityCount);
@@ -276,7 +279,7 @@ function resolveCountry(all, query) {
     ? '电话与姓名池均来自开源数据集，无需手动补充。'
     : `${missing.join('、')}数据集未覆盖（已填占位，如需更真实可在 data.js 中完善），其余字段已自动生成。`;
   const entry = `  ${code}: { // 由 add-country.js 自动生成${full ? '（电话/姓名池来自开源数据集）' : '；部分字段为通用占位，建议按当地习惯完善'}
-    name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}', postalFormat: '${postalFormat}',${noAdministrativeArea ? ' noAdministrativeArea: true,' : ''}
+    name: '${zh}', en: '${en}', lang: '${lang}', fmt: '${fmt}', postalFormat: '${addressProfile.postalFormat}',${addressProfile.hasAdministrativeArea ? '' : ' noAdministrativeArea: true,'}${Object.keys(addressProfile.administrativeAreaCodes).length ? ` administrativeAreaCodes: ${JSON.stringify(addressProfile.administrativeAreaCodes)},` : ''}
     cities: [${cityLines}],
     phones: ${phones},
     m: ${arr(gen.m || GENERIC_NAMES.m)},

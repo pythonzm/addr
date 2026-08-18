@@ -188,7 +188,7 @@ async function login(e) {
 // ---------- 业务 ----------
 function loadCountryData() {
   const src = fs.readFileSync(path.join(ROOT, 'js', 'data.js'), 'utf8');
-  return new Function(src + '; return { COUNTRIES, POSTAL_FORMATS };')();
+  return new Function(src + '; return { COUNTRIES };')();
 }
 
 function loadStatus() {
@@ -315,8 +315,7 @@ const server = http.createServer(async (req, res) => {
   if (!isAuthed(req)) return send(res, 401, { error: '未登录或会话已过期' });
 
   if (req.method === 'GET' && url.pathname === '/api/status') {
-    const { POSTAL_FORMATS } = loadCountryData();
-    return send(res, 200, { countries: loadStatus(), postalFormats: POSTAL_FORMATS, auth: AUTH_ON, frontendUrl: FRONTEND_URL, job: job && { name: job.name, status: job.status, started: job.started } });
+    return send(res, 200, { countries: loadStatus(), auth: AUTH_ON, frontendUrl: FRONTEND_URL, job: job && { name: job.name, status: job.status, started: job.started } });
   }
   if (req.method === 'GET' && url.pathname === '/api/job') {
     if (!job) return send(res, 200, { job: null });
@@ -333,18 +332,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/add-country') {
     const pendingCountry = readPendingCountry();
     if (pendingCountry) return send(res, 409, { error: `尚有待校验国家 ${pendingCountry.code || '未知'}，请先完成地址池校验` });
-    const { code, cities, postalFormat, noAdministrativeArea } = await readBody(req);
+    const { code, cities } = await readBody(req);
     // 支持代码/中文名/英文名，由 add-country.js 负责解析与歧义提示
     const query = String(code || '').trim();
     if (!query || query.length > 50 || /[\r\n"'\\]/.test(query)) return send(res, 400, { error: '请输入国家代码或名称（如 TH / 泰国 / Thailand）' });
     const n = Math.min(Math.max(parseInt(cities, 10) || 4, 1), 8);
-    const { POSTAL_FORMATS } = loadCountryData();
-    const allowedPostalFormats = new Set(['auto', ...Object.keys(POSTAL_FORMATS)]);
-    const selectedPostalFormat = postalFormat || 'auto';
-    if (!allowedPostalFormats.has(selectedPostalFormat)) return send(res, 400, { error: '不支持的邮政地址格式' });
-    const args = [path.join('tools', 'add-country.js'), query, String(n), `--postal-format=${selectedPostalFormat}`];
-    if (noAdministrativeArea === true) args.push('--no-administrative-area');
-    return startJob(`添加国家: ${query}`, process.execPath, args, res, { autoPublish: true });
+    return startJob(`添加国家: ${query}`, process.execPath, [path.join('tools', 'add-country.js'), query, String(n)], res, { autoPublish: true });
   }
   if (req.method === 'POST' && url.pathname === '/api/publish') {
     return publish(res);

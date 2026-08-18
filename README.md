@@ -84,6 +84,8 @@ node tools/backfill-administrative-areas.js --cities <cities500.txt> --admin1 <a
 已有的 OSM 行政区值会保留；需要重新校正所有记录时加 `--replace`。脚本会拒绝将明显跨境的地址填入错误行政区。香港和新加坡没有适合该国际表单字段的州/省层级，因此保持为空。
 地址池中 `a` 表示行政区，`as` 表示数据来源（`osm` 或 `geonames`）。
 
+在后台添加新国家/地区时，只需填写国家与城市数。程序会读取 Google libaddressinput 的国家元数据，自动判断是否存在适合国际地址表单的 State / Province / Region 层级，并采用该国的邮政地址字段顺序；无法确认元数据时会停止添加，不会靠猜测发布。
+
 ## 运行
 
 纯静态站点，无需构建。本地启动一个 HTTP 服务即可（clipboard 等 API 需要 localhost 或 HTTPS 环境）：

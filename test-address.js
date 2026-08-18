@@ -1,5 +1,6 @@
 const assert = require('assert');
 const fs = require('fs');
+const { deriveAddressProfile } = require('./tools/address-metadata');
 
 const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
 const {
@@ -18,6 +19,31 @@ const {
   postalFormatForCountry,
   formatFullAddress,
 } = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress };')();
+
+const metadataCases = [
+  ['US', { fmt: '%N%n%O%n%A%n%C, %S %Z', require: 'ACSZ', sub_keys: 'CA~NY', sub_names: 'California~New York', sub_isoids: 'CA~NY' }, 'city-area-postcode-comma', true],
+  ['GB', { fmt: '%N%n%O%n%A%n%C%n%Z', require: 'ACZ' }, 'city-postcode-comma', false],
+  ['DE', { fmt: '%N%n%O%n%A%n%Z %C', require: 'ACZ' }, 'postcode-city', false],
+  ['BR', { fmt: '%O%n%N%n%A%n%D%n%C-%S%n%Z', require: 'ASCZ' }, 'brazil', true],
+  ['JP', { fmt: '〒%Z%n%S%n%A%n%O%n%N', require: 'ASZ' }, 'japan', true],
+  ['SG', { fmt: '%N%n%O%n%A%nSINGAPORE %Z', require: 'AZ' }, 'postcode-city', false],
+  ['HK', { fmt: '%S%n%C%n%D%n%A%n%O%n%N', require: 'AS' }, 'area-city', true],
+  ['TR', { fmt: '%N%n%O%n%A%n%Z %C/%S', require: 'ACZ' }, 'postcode-city-area', true],
+  ['KR', { fmt: '%S %C%D%n%A%n%O%n%N%n%Z', require: 'ACSZ' }, 'area-city-postcode', true],
+  ['TW', { fmt: '%Z%n%S%C%n%A%n%O%n%N', require: 'ACSZ' }, 'postcode-area-city', true],
+];
+for (const [code, metadata, postalFormat, hasAdministrativeArea] of metadataCases) {
+  const profile = deriveAddressProfile(code, metadata);
+  assert.strictEqual(profile.postalFormat, postalFormat, `${code} postal format`);
+  assert.strictEqual(profile.hasAdministrativeArea, hasAdministrativeArea, `${code} administrative area`);
+}
+assert.strictEqual(deriveAddressProfile('US', metadataCases[0][1]).administrativeAreaCodes.California, 'CA');
+assert.strictEqual(deriveAddressProfile('XX', { fmt: '%C %Z %S' }).postalFormat, 'city-postcode-area');
+assert.strictEqual(deriveAddressProfile('XX', { fmt: '%S %Z %C' }).postalFormat, 'area-postcode-city');
+assert.strictEqual(deriveAddressProfile('XX', { fmt: '%C%n%Z', sub_keys: 'North~South' }).hasAdministrativeArea, true);
+assert.throws(() => deriveAddressProfile('XX', { fmt: '%A%n%N' }), /无法识别邮政字段顺序/);
+assert.throws(() => deriveAddressProfile('BR', { fmt: '%A%n%N' }), /缺少必要字段/);
+assert.throws(() => deriveAddressProfile('JP', { fmt: '%A%n%N' }), /缺少必要字段/);
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
@@ -66,6 +92,10 @@ assert.strictEqual(postalFormatForCountry('UK'), 'city-postcode-comma');
 assert.ok(Object.keys(POSTAL_FORMATS).includes(postalFormatForCountry('DE')));
 COUNTRIES.ZZ = { postalFormat: 'city-postcode-comma' };
 assert.strictEqual(formatFullAddress({ code: 'ZZ', line1: '1 Test Road', postcode: '12345', city: 'Example', administrativeArea: '', administrativeAreaCode: '', country: 'Testland' }), '1 Test Road, Example, 12345, Testland');
+COUNTRIES.ZZ = { postalFormat: 'city-postcode-area' };
+assert.strictEqual(formatFullAddress({ code: 'ZZ', line1: '1 Test Road', postcode: '12345', city: 'Example', administrativeArea: 'North', country: 'Testland' }), '1 Test Road, Example 12345 North, Testland');
+COUNTRIES.ZZ = { postalFormat: 'area-postcode-city' };
+assert.strictEqual(formatFullAddress({ code: 'ZZ', line1: '1 Test Road', postcode: '12345', city: 'Example', administrativeArea: 'North', country: 'Testland' }), '1 Test Road, North 12345 Example, Testland');
 COUNTRIES.ZZ = { postalFormat: 'postcode-city', noAdministrativeArea: true };
 assert.strictEqual(countryHasAdministrativeArea('ZZ'), false);
 assert.strictEqual(administrativeAreaFor('ZZ', 1, 1, 'Invented State'), '');

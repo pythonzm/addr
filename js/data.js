@@ -238,6 +238,11 @@ const POSTAL_FORMATS = {
   japan: '日本：〒邮编 都道府县 城市',
   'postcode-area-city': '街道, 邮编 行政区 城市, 国家',
   'postcode-city-area': '街道, 邮编 城市 行政区, 国家',
+  'area-city-postcode': '街道, 行政区 城市 邮编, 国家',
+  'area-city': '街道, 行政区 城市, 国家',
+  'city-area': '街道, 城市 行政区, 国家',
+  'city-postcode-area': '街道, 城市 邮编 行政区, 国家',
+  'area-postcode-city': '街道, 行政区 邮编 城市, 国家',
 };
 const POOL_MIN_PUBLISH = 100;
 
@@ -315,7 +320,7 @@ const ADMINISTRATIVE_AREA_CODES = {
 };
 
 function administrativeAreaCodeFor(code, administrativeArea) {
-  return ADMINISTRATIVE_AREA_CODES[code]?.[administrativeArea] || '';
+  return COUNTRIES[code]?.administrativeAreaCodes?.[administrativeArea] || ADMINISTRATIVE_AREA_CODES[code]?.[administrativeArea] || '';
 }
 
 function formatAdministrativeArea(administrativeArea, administrativeAreaCode) {
@@ -395,6 +400,16 @@ function formatFullAddress({ code, line1, postcode, city, administrativeArea, ad
     locality = [postcode, area, city].filter(Boolean).join(' ');
   } else if (postalFormat === 'postcode-city-area') {
     locality = [postcode, city, area].filter(Boolean).join(' ');
+  } else if (postalFormat === 'area-city-postcode') {
+    locality = [area, city, postcode].filter(Boolean).join(' ');
+  } else if (postalFormat === 'area-city') {
+    locality = [area, city].filter(Boolean).join(' ');
+  } else if (postalFormat === 'city-area') {
+    locality = [city, area].filter(Boolean).join(' ');
+  } else if (postalFormat === 'city-postcode-area') {
+    locality = [city, postcode, area].filter(Boolean).join(' ');
+  } else if (postalFormat === 'area-postcode-city') {
+    locality = [area, postcode, city].filter(Boolean).join(' ');
   } else if (postalFormat === 'postcode-city') {
     locality = [postcode, city].filter(Boolean).join(' ');
   } else {
