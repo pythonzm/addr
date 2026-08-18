@@ -8,7 +8,9 @@ const fs = require('fs');
 const path = require('path');
 
 const dataSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
-const COUNTRIES = new Function(dataSrc + '; return COUNTRIES;')();
+const { COUNTRIES, administrativeAreaFor, administrativeAreaFromOsmTags } = new Function(
+  dataSrc + '; return { COUNTRIES, administrativeAreaFor, administrativeAreaFromOsmTags };'
+)();
 
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -61,7 +63,7 @@ async function overpass(filters, bbox, limit) {
 }
 
 // 从元素提取地址；strict=true 要求邮编+城市齐全
-function extract(el, cityName, strict) {
+function extract(el, cityName, strict, code) {
   const t = el.tags || {};
   const n = t['addr:housenumber'];
   const s = t['addr:street'] || t['addr:place'] || t['addr:neighbourhood'] || t['addr:quarter'] || t['addr:suburb'] || '';
@@ -72,8 +74,9 @@ function extract(el, cityName, strict) {
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
   if (lat == null || lng == null) return null;
+  const a = administrativeAreaFor(code, lat, lng, administrativeAreaFromOsmTags(t));
   return {
-    n, s, p, c,
+    n, s, p, c, a,
     lat: +lat.toFixed(6), lng: +lng.toFixed(6),
     o: `${el.type}/${el.id}`,
   };
@@ -101,7 +104,7 @@ async function buildCountry(code) {
     for (let t = 0; t < 6 && got < perCity && pool.size < TARGET; t++) {
       try {
         const els = await overpass(strictFilters, randomBBox(city, 0.02), 400);
-        for (const el of els) if (add(extract(el, city[0], true))) got++;
+        for (const el of els) if (add(extract(el, city[0], true, code))) got++;
         process.stdout.write(`  ${code}/${city[0]} 第${t + 1}轮: +${els.length} 原始, 累计 ${pool.size}\n`);
       } catch (e) {
         process.stdout.write(`  ${code}/${city[0]} 第${t + 1}轮失败: ${e.message}\n`);
@@ -118,7 +121,7 @@ async function buildCountry(code) {
       for (let t = 0; t < 4 && pool.size < TARGET; t++) {
         try {
           const els = await overpass(looseFilters, randomBBox(city, 0.02), 400);
-          for (const el of els) add(extract(el, city[0], false));
+          for (const el of els) add(extract(el, city[0], false, code));
         } catch (e) { /* 跳过该轮 */ }
         await sleep(800);
       }

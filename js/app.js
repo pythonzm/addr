@@ -278,6 +278,21 @@ function formatLine1(fmt, street, num) {
   return `${street} ${num}`;
 }
 
+// 这些国家的标准邮寄格式通常包含一级行政区；其他国家仍单独展示该字段。
+const WESTERN_ADDRESS_AREA_CODES = new Set(['US', 'CA', 'AU']);
+const POSTCODE_FIRST_ADDRESS_AREA_CODES = new Set(['JP', 'KR', 'TW', 'VN']);
+const LOCALITY_FIRST_ADDRESS_AREA_CODES = new Set(['BR', 'TH', 'PH', 'MY', 'TR']);
+
+function formatFullAddress(code, line1, postcode, city, administrativeArea, country) {
+  const area = administrativeArea && administrativeArea !== city ? administrativeArea : '';
+  let locality;
+  if (WESTERN_ADDRESS_AREA_CODES.has(code)) locality = [city, area, postcode];
+  else if (POSTCODE_FIRST_ADDRESS_AREA_CODES.has(code)) locality = [postcode, area, city];
+  else if (LOCALITY_FIRST_ADDRESS_AREA_CODES.has(code)) locality = [postcode, city, area];
+  else locality = [postcode, city];
+  return [line1, locality.filter(Boolean).join(' '), country].filter(Boolean).join(', ');
+}
+
 // ---------- 生成 ----------
 async function generate() {
   const btn = document.getElementById('genBtn');
@@ -307,9 +322,10 @@ async function generate() {
 function fromPool(code, c, pool) {
   const a = pick(pool.addrs);
   const line1 = formatLine1(c.fmt, a.s, a.n);
-  const address = [line1, [a.p, a.c].filter(Boolean).join(' '), c.en].filter(Boolean).join(', ');
+  const administrativeArea = administrativeAreaFor(code, a.lat, a.lng, a.a || '');
+  const address = formatFullAddress(code, line1, a.p, a.c, administrativeArea, c.en);
   return {
-    ...makePerson(c), address, line1, city: a.c, postcode: a.p,
+    ...makePerson(c), address, line1, city: a.c, administrativeArea, postcode: a.p,
     country: c.en, countryCode: code, flag: c.flag || '',
     lat: a.lat, lng: a.lng,
     osmUrl: `https://www.openstreetmap.org/${a.o}`,
@@ -331,24 +347,27 @@ async function fromLive(code, c) {
   const num = tags['addr:housenumber'] || '';
   let city = tags['addr:city'] || '';
   let postcode = tags['addr:postcode'] || '';
+  let administrativeArea = administrativeAreaFromOsmTags(tags);
 
   if (!street || !city || !postcode) {
     try {
       const n = await nominatimReverse(lat, lng, c.lang);
       const a = n.address || {};
       street = street || a.road || a.pedestrian || a.neighbourhood || a.suburb || '';
-      city = city || a.city || a.town || a.village || a.municipality || a.county || cityName;
+      city = city || a.city || a.town || a.village || a.municipality || cityName;
       postcode = postcode || a.postcode || '';
+      administrativeArea = administrativeArea || administrativeAreaFromAddress(a);
     } catch (e) {
       city = city || cityName;
     }
   }
 
   const line1 = formatLine1(c.fmt, street, num);
-  const address = [line1, [postcode, city].filter(Boolean).join(' '), c.en].filter(Boolean).join(', ');
+  administrativeArea = administrativeAreaFor(code, lat, lng, administrativeArea);
+  const address = formatFullAddress(code, line1, postcode, city, administrativeArea, c.en);
 
   return {
-    ...makePerson(c), address, line1, city, postcode,
+    ...makePerson(c), address, line1, city, administrativeArea, postcode,
     country: c.en, countryCode: code, flag: c.flag || '',
     lat, lng,
     osmUrl: `https://www.openstreetmap.org/${el.type}/${el.id}`,
@@ -370,6 +389,7 @@ function renderResult() {
     { icon: ICONS.mail, label: t('f_email'), val: r.email, raw: r.email },
     { icon: ICONS.home, label: t('f_street'), val: r.line1 || '-', raw: r.line1 },
     { icon: ICONS.city, label: t('f_city'), val: r.city || '-', raw: r.city },
+    { icon: ICONS.city, label: t('f_area'), val: r.administrativeArea || '-', raw: r.administrativeArea },
     { icon: ICONS.postcode, label: t('f_postcode'), val: r.postcode || '-', raw: r.postcode },
     { icon: ICONS.pin, label: t('f_address'), val: r.address, raw: r.address, fullWidth: true },
     { icon: ICONS.pin, label: t('f_coords'), val: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, raw: `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`, isMono: true, fullWidth: true },
@@ -454,6 +474,7 @@ function copyAll() {
     `${t('f_gender')}: ${genderText(r.gender)}`,
     `${t('lbl_phone')}: ${r.phone}`,
     `${t('f_email')}: ${r.email}`,
+    `${t('f_area')}: ${r.administrativeArea || '-'}`,
     `${t('lbl_address')}: ${r.address}`,
     `${t('f_coords')}: ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}`,
     `OSM: ${r.osmUrl}`
@@ -581,7 +602,7 @@ function exportCSV() {
   if (!list.length) return toast(t('toast_no_data'), true);
   const rows = [t('csv_headers').join(',')];
   list.forEach(it => {
-    rows.push([it.note, it.country, it.name, genderText(it.gender), it.email, it.phone, it.address, it.line1, it.city, it.postcode, it.lat, it.lng, it.osmUrl, it.time]
+    rows.push([it.note, it.country, it.name, genderText(it.gender), it.email, it.phone, it.address, it.line1, it.city, it.administrativeArea, it.postcode, it.lat, it.lng, it.osmUrl, it.time]
       .map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(','));
   });
   download('\uFEFF' + rows.join('\n'), `osm_addresses_${Date.now()}.csv`, 'text/csv;charset=utf-8');

@@ -228,4 +228,67 @@ const COUNTRIES = {
   },
 };
 
+// 与各国 cities 数组按下标对应，作为旧地址池缺少行政区时的坐标兜底。
+// 行政区统一使用适合国际表单 State / Province / Region 字段的英文名称。
+const ADMINISTRATIVE_AREAS = {
+  US: ['New York', 'California', 'Illinois', 'Washington', 'Massachusetts'],
+  CA: ['Ontario', 'British Columbia', 'Quebec', 'Alberta'],
+  UK: ['England', 'England', 'England', 'Scotland'],
+  DE: ['Berlin', 'Bavaria', 'Hamburg', 'North Rhine-Westphalia', 'Hesse'],
+  FR: ['Île-de-France', 'Auvergne-Rhône-Alpes', "Provence-Alpes-Côte d'Azur", 'Occitanie'],
+  IT: ['Lazio', 'Lombardy', 'Piedmont', 'Emilia-Romagna'],
+  ES: ['Community of Madrid', 'Catalonia', 'Valencian Community', 'Andalusia'],
+  NL: ['North Holland', 'South Holland', 'Utrecht', 'South Holland'],
+  CH: ['Zürich', 'Geneva', 'Basel-Stadt', 'Bern'],
+  AT: ['Vienna', 'Styria', 'Upper Austria', 'Salzburg'],
+  SE: ['Stockholm', 'Västra Götaland', 'Skåne'],
+  PL: ['Masovian', 'Lesser Poland', 'Lower Silesian', 'Pomeranian'],
+  CZ: ['Prague', 'South Moravian', 'Moravian-Silesian'],
+  PT: ['Lisbon', 'Porto', 'Coimbra'],
+  JP: ['Tokyo', 'Osaka', 'Kyoto', 'Aichi'],
+  KR: ['Seoul', 'Busan', 'Incheon'],
+  TW: ['Taipei City', 'Taichung City', 'Kaohsiung City'],
+  SG: ['Singapore'],
+  AU: ['New South Wales', 'Victoria', 'Queensland', 'Western Australia'],
+  BR: ['São Paulo', 'Rio de Janeiro', 'Paraná'],
+  VN: ['Ho Chi Minh City', 'Hanoi', 'Đồng Nai', 'Hải Phòng'],
+  HK: ['Hong Kong', 'Hong Kong', 'Hong Kong', 'Hong Kong'],
+  TH: ['Bangkok', 'Nonthaburi', 'Samut Prakan', 'Nonthaburi'],
+  PH: ['Metro Manila', 'Metro Manila', 'Rizal', 'Metro Manila'],
+  MY: ['Kuala Lumpur', 'Selangor', 'Selangor', 'Selangor'],
+  TR: ['Ankara', 'Adana', 'Gaziantep', 'Konya'],
+};
+
+function administrativeAreaFromAddress(address = {}) {
+  return address.state || address.province || address.region || '';
+}
+
+function administrativeAreaFromOsmTags(tags = {}) {
+  return administrativeAreaFromAddress({
+    state: tags['addr:state'],
+    province: tags['addr:province'],
+    region: tags['addr:region'],
+  });
+}
+
+function administrativeAreaFor(code, lat, lng, explicit = '') {
+  if (explicit) return explicit;
+  const country = COUNTRIES[code];
+  const areas = ADMINISTRATIVE_AREAS[code];
+  if (!country || !areas || !Number.isFinite(lat) || !Number.isFinite(lng)) return '';
+
+  let nearest = 0;
+  let nearestDistance = Infinity;
+  country.cities.forEach((city, index) => {
+    const latDelta = lat - city[1];
+    const lngDelta = (lng - city[2]) * Math.cos(lat * Math.PI / 180);
+    const distance = latDelta * latDelta + lngDelta * lngDelta;
+    if (distance < nearestDistance) {
+      nearest = index;
+      nearestDistance = distance;
+    }
+  });
+  return areas[nearest] || '';
+}
+
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];
