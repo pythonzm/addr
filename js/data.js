@@ -226,6 +226,14 @@ const COUNTRIES = {
     f: ['Fatma', 'Ayşe', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Meryem', 'Şerife'],
     l: ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk'],
   },
+  ID: { // 由 add-country.js 自动生成；部分字段为通用占位，建议按当地习惯完善
+    name: '印度尼西亚', en: 'Indonesia', lang: 'id', fmt: 'SN', postalFormat: 'city-area-postcode', administrativeAreaCodes: {"Aceh":"AC","Bali":"BA","Banten":"BT","Bengkulu":"BE","Special Region of Yogyakarta":"YO","Jakarta":"JK","Gorontalo":"GO","Jambi":"JA","West Java":"JB","Central Java":"JT","East Java":"JI","West Kalimantan":"KB","South Kalimantan":"KS","Central Kalimantan":"KT","East Kalimantan":"KI","North Kalimantan":"KU","Bangka Belitung Islands":"BB","Riau Islands":"KR","Lampung":"LA","Maluku":"MA","North Maluku":"MU","West Nusa Tenggara":"NB","East Nusa Tenggara":"NT","Papua":"PA","West Papua":"PB","Riau":"RI","West Sulawesi":"SR","South Sulawesi":"SN","Central Sulawesi":"ST","South East Sulawesi":"SG","North Sulawesi":"SA","West Sumatra":"SB","South Sumatra":"SS","North Sumatra":"SU"},
+    cities: [['Jakarta', -6.21, 106.85, 0.07], ['Surabaya', -7.25, 112.75, 0.05]],
+    phones: ['+62 812 ### ###'],
+    m: ['Alex', 'David', 'Daniel', 'Kevin', 'Leo', 'Max', 'Tom', 'Sam'],
+    f: ['Anna', 'Maria', 'Sara', 'Emma', 'Mia', 'Lena', 'Eva', 'Nina'],
+    l: ['Nguyen', 'Santos', 'Novak', 'Kova', 'Petrov', 'Haddad', 'Okoro', 'Yilmaz'],
+  },
 };
 // END COUNTRIES
 
