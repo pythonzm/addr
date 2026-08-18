@@ -5,14 +5,16 @@ const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
 const {
   COUNTRIES,
   ADMINISTRATIVE_AREAS,
+  ADMINISTRATIVE_AREA_CODES,
   NO_ADMINISTRATIVE_AREA_CODES,
   administrativeAreaFromAddress,
   administrativeAreaFromOsmTags,
   administrativeAreaFor,
   administrativeAreaCodeFor,
   formatAdministrativeArea,
+  administrativeAreasEquivalent,
   formatFullAddress,
-} = new Function(dataSource + '; return { COUNTRIES, ADMINISTRATIVE_AREAS, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, formatFullAddress };')();
+} = new Function(dataSource + '; return { COUNTRIES, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, formatFullAddress };')();
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
@@ -38,10 +40,23 @@ assert.strictEqual(administrativeAreaCodeFor('AU', 'New South Wales'), 'NSW');
 assert.strictEqual(administrativeAreaCodeFor('US', 'Texas'), 'TX');
 assert.strictEqual(administrativeAreaCodeFor('CA', 'Nova Scotia'), 'NS');
 assert.strictEqual(administrativeAreaCodeFor('AU', 'Tasmania'), 'TAS');
+assert.strictEqual(administrativeAreaCodeFor('BR', 'Sao Paulo'), 'SP');
+assert.strictEqual(administrativeAreaCodeFor('BR', 'Paraná'), 'PR');
+assert.strictEqual(Object.values(ADMINISTRATIVE_AREA_CODES.BR).filter((code, index, codes) => codes.indexOf(code) === index).length, 27);
+assert.ok(administrativeAreasEquivalent('KR', '서울특별시', 'Seoul'));
+assert.ok(administrativeAreasEquivalent('TW', '臺中市南屯區', 'Taichung City'));
+assert.ok(administrativeAreasEquivalent('TR', 'Selçuklu/Konya', 'Konya'));
 assert.strictEqual(formatAdministrativeArea('California', 'CA'), 'California (CA)');
 assert.strictEqual(formatFullAddress({ code: 'US', line1: '4444 Burns Avenue', postcode: '90029', city: 'Los Angeles', administrativeArea: 'California', administrativeAreaCode: 'CA', country: 'United States' }), '4444 Burns Avenue, Los Angeles, CA 90029, United States');
 assert.strictEqual(formatFullAddress({ code: 'CA', line1: '10 Main Street', postcode: 'M5V 2T6', city: 'Toronto', administrativeArea: 'Ontario', administrativeAreaCode: 'ON', country: 'Canada' }), '10 Main Street, Toronto, ON M5V 2T6, Canada');
 assert.strictEqual(formatFullAddress({ code: 'AU', line1: '10 George Street', postcode: '2000', city: 'Sydney', administrativeArea: 'New South Wales', administrativeAreaCode: 'NSW', country: 'Australia' }), '10 George Street, Sydney NSW 2000, Australia');
+assert.strictEqual(formatFullAddress({ code: 'BR', line1: 'Avenida Paulista, 100', postcode: '01310-100', city: 'São Paulo', administrativeArea: 'Sao Paulo', administrativeAreaCode: 'SP', country: 'Brazil' }), 'Avenida Paulista, 100, São Paulo - SP, 01310-100, Brazil');
+assert.strictEqual(formatFullAddress({ code: 'JP', line1: '千代田1', postcode: '100-0001', city: '千代田区', administrativeArea: 'Tokyo', administrativeAreaCode: '', country: 'Japan' }), '千代田1, 〒100-0001 Tokyo 千代田区, Japan');
+assert.strictEqual(formatFullAddress({ code: 'KR', line1: '테헤란로 1', postcode: '06236', city: '서울특별시', administrativeArea: 'Seoul', administrativeAreaCode: '', country: 'South Korea' }), '테헤란로 1, 06236 서울특별시, South Korea');
+assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路 1 號', postcode: '100', city: '台北市', administrativeArea: 'Taipei City', administrativeAreaCode: '', country: 'Taiwan' }), '信義路 1 號, 100 台北市, Taiwan');
+assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Selçuklu/Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Selçuklu/Konya, Türkiye');
+assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Konya, Türkiye');
+assert.strictEqual(formatFullAddress({ code: 'UK', line1: '20B Maxted Road', postcode: 'SE15 4LF', city: 'London', administrativeArea: 'England', administrativeAreaCode: '', country: 'United Kingdom' }), '20B Maxted Road, London, SE15 4LF, United Kingdom');
 
 for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => name.endsWith('.json'))) {
   const pool = JSON.parse(fs.readFileSync(__dirname + '/data/pool/' + filename, 'utf8'));
@@ -59,7 +74,7 @@ for (const filename of fs.readdirSync(__dirname + '/data/pool').filter(name => n
 }
 
 const loadPool = code => JSON.parse(fs.readFileSync(`${__dirname}/data/pool/${code}.json`, 'utf8')).addrs;
-for (const code of ['US', 'CA', 'AU']) {
+for (const code of ['US', 'CA', 'AU', 'BR']) {
   for (const area of new Set(loadPool(code).map(address => address.a))) {
     assert.ok(administrativeAreaCodeFor(code, area), `${code} ${area} should have a postal abbreviation`);
   }

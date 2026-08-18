@@ -278,6 +278,14 @@ const ADMINISTRATIVE_AREA_CODES = {
     'Australian Capital Territory': 'ACT', 'New South Wales': 'NSW', 'Northern Territory': 'NT', Queensland: 'QLD',
     'South Australia': 'SA', Tasmania: 'TAS', Victoria: 'VIC', 'Western Australia': 'WA',
   },
+  BR: {
+    Acre: 'AC', Alagoas: 'AL', Amapa: 'AP', 'Amapá': 'AP', Amazonas: 'AM', Bahia: 'BA', Ceara: 'CE', 'Ceará': 'CE',
+    'Distrito Federal': 'DF', 'Espirito Santo': 'ES', 'Espírito Santo': 'ES', Goias: 'GO', 'Goiás': 'GO', Maranhao: 'MA', 'Maranhão': 'MA',
+    'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG', Para: 'PA', 'Pará': 'PA', Paraiba: 'PB', 'Paraíba': 'PB',
+    Parana: 'PR', 'Paraná': 'PR', Pernambuco: 'PE', Piaui: 'PI', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ',
+    'Rio Grande do Norte': 'RN', 'Rio Grande do Sul': 'RS', Rondonia: 'RO', 'Rondônia': 'RO', Roraima: 'RR',
+    'Santa Catarina': 'SC', 'Sao Paulo': 'SP', 'São Paulo': 'SP', Sergipe: 'SE', Tocantins: 'TO',
+  },
 };
 
 function administrativeAreaCodeFor(code, administrativeArea) {
@@ -287,6 +295,23 @@ function administrativeAreaCodeFor(code, administrativeArea) {
 function formatAdministrativeArea(administrativeArea, administrativeAreaCode) {
   if (!administrativeArea) return '';
   return `${administrativeArea}${administrativeAreaCode ? ` (${administrativeAreaCode})` : ''}`;
+}
+
+function administrativeAreasEquivalent(code, city, administrativeArea) {
+  const normalizeArea = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalizedCity = normalizeArea(city);
+  const normalizedArea = normalizeArea(administrativeArea);
+  if (!normalizedArea) return true;
+  if (normalizedCity === normalizedArea) return true;
+  if (code === 'TR' && normalizeArea(city.split('/').pop()) === normalizedArea) return true;
+  const aliases = {
+    KR: { Seoul: ['서울특별시'], Incheon: ['인천광역시'], Busan: ['부산광역시'] },
+    TW: {
+      'Taipei City': ['台北市', '臺北市'], 'New Taipei City': ['新北市'],
+      'Taichung City': ['台中市', '臺中市'], 'Kaohsiung City': ['高雄市'],
+    },
+  };
+  return (aliases[code]?.[administrativeArea] || []).some(alias => normalizedCity.startsWith(normalizeArea(alias)));
 }
 
 function administrativeAreaFromAddress(address = {}) {
@@ -323,21 +348,29 @@ function administrativeAreaFor(code, lat, lng, explicit = '') {
 }
 
 function formatFullAddress({ code, line1, postcode, city, administrativeArea, administrativeAreaCode, country }) {
-  const area = administrativeArea && administrativeArea !== city ? administrativeArea : '';
+  const area = administrativeAreasEquivalent(code, city, administrativeArea) ? '' : administrativeArea;
   const areaLabel = administrativeAreaCode || area;
   let locality;
+  let localityParts;
   if (code === 'US' || code === 'CA') {
     locality = [city, [areaLabel, postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   } else if (code === 'AU') {
     locality = [city, areaLabel, postcode].filter(Boolean).join(' ');
-  } else if (['JP', 'KR', 'TW', 'VN'].includes(code)) {
+  } else if (code === 'BR') {
+    const cityAndState = [city, areaLabel].filter(Boolean).join(' - ');
+    localityParts = [cityAndState, postcode];
+  } else if (code === 'JP') {
+    locality = [postcode ? `〒${postcode}` : '', area, city].filter(Boolean).join(' ');
+  } else if (code === 'UK') {
+    locality = [city, postcode].filter(Boolean).join(', ');
+  } else if (['KR', 'TW', 'VN'].includes(code)) {
     locality = [postcode, area, city].filter(Boolean).join(' ');
-  } else if (['BR', 'TH', 'PH', 'MY', 'TR'].includes(code)) {
+  } else if (['TH', 'PH', 'MY', 'TR'].includes(code)) {
     locality = [postcode, city, area].filter(Boolean).join(' ');
   } else {
     locality = [postcode, city].filter(Boolean).join(' ');
   }
-  return [line1, locality, country].filter(Boolean).join(', ');
+  return [line1, ...(localityParts || [locality]), country].filter(Boolean).join(', ');
 }
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];
