@@ -9,6 +9,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { readPendingCountry, claimPendingCountry, clearPendingCountry } = require('./country-pending');
 const { deriveAddressProfile, fetchAddressMetadata } = require('./address-metadata');
+const { topCities } = require('./geonames-cities');
 
 const DATA_PATH = path.join(__dirname, '..', 'js', 'data.js');
 const dataSrc = fs.readFileSync(DATA_PATH, 'utf8');
@@ -143,32 +144,6 @@ async function datasetEnrich(iso, calling) {
   return gen;
 }
 
-async function overpassCities(iso, count) {
-  // 不限定 admin_level：香港/澳门等特别行政区的边界关系不是 admin_level=2
-  const q = `[out:json][timeout:60];area["ISO3166-1"="${iso}"]->.a;(node["place"~"^(city|town)$"]["population"](area.a););out tags center 500;`;
-  const endpoints = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
-  let els = null, lastErr;
-  for (const url of endpoints) {
-    try {
-      const data = await fetchJson(url, {
-        method: 'POST', body: 'data=' + encodeURIComponent(q),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'User-Agent': 'addr-generator-add-country/1.0' },
-      });
-      els = data.elements || [];
-      break;
-    } catch (e) { lastErr = e; await sleep(1500); }
-  }
-  if (!els) throw lastErr;
-  const cities = els
-    .map(el => ({ name: el.tags['name:en'] || el.tags.name, lat: el.lat, lng: el.lon, pop: parseInt(String(el.tags.population).replace(/\D/g, ''), 10) || 0 }))
-    .filter(c => c.name && c.pop > 0)
-    .sort((a, b) => b.pop - a.pop);
-  // 去掉重名（同城多节点取人口最大的）
-  const seen = new Set();
-  const uniq = cities.filter(c => !seen.has(c.name) && seen.add(c.name));
-  return uniq.slice(0, count);
-}
-
 function radiusFor(pop) {
   if (pop >= 5e6) return 0.07;
   if (pop >= 2e6) return 0.05;
@@ -241,8 +216,8 @@ function resolveCountry(all, query) {
   console.log(`  ${zh} (${en})  区号 ${calling || '未知'}  语言 ${lang}  门牌格式 ${fmt}  邮政格式 ${addressProfile.postalFormat}`);
   console.log(`  州/省/地区层级：${addressProfile.hasAdministrativeArea ? `有（${addressProfile.administrativeAreaType}）` : '无'}`);
 
-  console.log(`[2/5] 获取人口最多的 ${cityCount} 个城市（Overpass）…`);
-  let cities = await overpassCities(iso, cityCount);
+  console.log(`[2/5] 获取人口最多的 ${cityCount} 个城市（GeoNames）…`);
+  let cities = topCities(iso, cityCount);
   if (!cities.length) {
     // 城邦/特别行政区常无带人口标注的 place 节点：退回用数据集中心坐标作单一城市
     const [clat, clng] = info.latlng || [];

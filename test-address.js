@@ -1,6 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const { deriveAddressProfile, fetchAddressMetadata } = require('./tools/address-metadata');
+const { topCitiesFromText } = require('./tools/geonames-cities');
 
 const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
 const {
@@ -62,6 +63,14 @@ assert.throws(() => deriveAddressProfile('JP', { fmt: '%A%n%N' }), /缺少必要
   console.error(error);
   process.exitCode = 1;
 });
+
+const geoNamesFixture = [
+  ['1', 'Jakarta', 'Jakarta', '', '-6.21462', '106.84513', 'P', 'PPLC', 'ID', '', '04', '', '', '', '8540121'].join('\t'),
+  ['2', 'Surabaya', 'Surabaya', '', '-7.24917', '112.75083', 'P', 'PPLA', 'ID', '', '08', '', '', '', '2874314'].join('\t'),
+  ['3', 'Bandung', 'Bandung', '', '-6.92222', '107.60694', 'P', 'PPLA', 'ID', '', '30', '', '', '', '2441600'].join('\t'),
+  ['4', 'Singapore', 'Singapore', '', '1.28967', '103.85007', 'P', 'PPLC', 'SG', '', '', '', '', '', '5638700'].join('\t'),
+].join('\n');
+assert.deepStrictEqual(topCitiesFromText(geoNamesFixture, 'ID', 2).map(city => city.name), ['Jakarta', 'Surabaya']);
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
