@@ -218,6 +218,14 @@ const COUNTRIES = {
     f: ['Nur', 'Wan', 'Nurul', 'Aisyah', 'Maryam', 'Siti', 'Dhia', 'Naura'],
     l: ['Nguyen', 'Santos', 'Novak', 'Kova', 'Petrov', 'Haddad', 'Okoro', 'Yilmaz'],
   },
+  TR: { // 由 add-country.js 自动生成（电话/姓名池来自开源数据集）
+    name: '土耳其', en: 'Türkiye', lang: 'tr', fmt: 'SN',
+    cities: [['Ankara', 39.92, 32.85, 0.07], ['Adana', 36.99, 35.33, 0.05], ['Gaziantep', 37.06, 37.38, 0.05], ['Konya', 37.87, 32.49, 0.05]],
+    phones: ['+90 501 ### ####'],
+    m: ['Mehmet', 'Mustafa', 'Ahmet', 'Ali', 'Hüseyin', 'Hasan', 'Ibrahim', 'İsmail'],
+    f: ['Fatma', 'Ayşe', 'Emine', 'Hatice', 'Zeynep', 'Elif', 'Meryem', 'Şerife'],
+    l: ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk'],
+  },
 };
 
 const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'proton.me'];
