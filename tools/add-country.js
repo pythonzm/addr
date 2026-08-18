@@ -231,7 +231,7 @@ function resolveCountry(all, query) {
   console.log('  读取 Google libaddressinput 邮政元数据…');
   let addressProfile;
   try {
-    const metadata = await fetchAddressMetadata(iso, fetchJson, sleep);
+    const metadata = await fetchAddressMetadata(iso, fetchJson, fetchRaw, sleep);
     addressProfile = deriveAddressProfile(code, metadata);
     if (!POSTAL_FORMATS[addressProfile.postalFormat]) throw new Error(`程序尚不支持邮政格式：${addressProfile.postalFormat}`);
   } catch (error) {

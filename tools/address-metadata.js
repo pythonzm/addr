@@ -68,7 +68,14 @@ function deriveAddressProfile(code, metadata) {
   };
 }
 
-async function fetchAddressMetadata(iso, fetchJson, wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+function parseJsonFromMirror(text) {
+  const start = String(text).indexOf('{');
+  const end = String(text).lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('备用地址元数据响应内容异常');
+  return JSON.parse(String(text).slice(start, end + 1));
+}
+
+async function fetchAddressMetadata(iso, fetchJson, fetchRaw, wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -79,7 +86,13 @@ async function fetchAddressMetadata(iso, fetchJson, wait = ms => new Promise(res
       if (attempt < 3) await wait(attempt * 1000);
     }
   }
-  throw lastError;
+  try {
+    // Appspot 在部分服务器网络中会持续返回拦截页，使用独立的只读抓取通道兜底。
+    const mirrored = await fetchRaw(`https://r.jina.ai/https://chromium-i18n.appspot.com/ssl-address/data/${iso}`);
+    return parseJsonFromMirror(mirrored);
+  } catch (mirrorError) {
+    throw new Error(`主数据源失败：${lastError.message}；备用数据源失败：${mirrorError.message}`);
+  }
 }
 
-module.exports = { derivePostalFormat, subdivisionCodes, deriveAddressProfile, fetchAddressMetadata };
+module.exports = { derivePostalFormat, subdivisionCodes, deriveAddressProfile, parseJsonFromMirror, fetchAddressMetadata };

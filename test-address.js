@@ -49,12 +49,15 @@ assert.throws(() => deriveAddressProfile('JP', { fmt: '%A%n%N' }), /缺少必要
   const requested = [];
   const metadata = await fetchAddressMetadata('ID', async url => {
     requested.push(url);
-    if (requested.length < 3) throw new Error('响应内容异常');
-    return { fmt: '%C%n%S %Z' };
+    throw new Error('响应内容异常');
+  }, async url => {
+    requested.push(url);
+    return 'Title:\n\nMarkdown Content:\n{"fmt":"%C%n%S %Z"}\n';
   }, async () => {});
   assert.strictEqual(metadata.fmt, '%C%n%S %Z');
-  assert.strictEqual(requested.length, 3);
-  assert.ok(requested.every((url, index) => url.endsWith(`ID?attempt=${index + 1}`)));
+  assert.strictEqual(requested.length, 4);
+  assert.ok(requested.slice(0, 3).every((url, index) => url.endsWith(`ID?attempt=${index + 1}`)));
+  assert.ok(requested[3].startsWith('https://r.jina.ai/'));
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
