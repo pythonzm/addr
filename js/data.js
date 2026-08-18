@@ -258,6 +258,7 @@ const ADMINISTRATIVE_AREAS = {
   MY: ['Kuala Lumpur', 'Selangor', 'Selangor', 'Selangor'],
   TR: ['Ankara', 'Adana', 'Gaziantep', 'Konya'],
 };
+const NO_ADMINISTRATIVE_AREA_CODES = new Set(['HK', 'SG']);
 
 function administrativeAreaFromAddress(address = {}) {
   return address.state || address.province || address.region || '';
@@ -272,6 +273,7 @@ function administrativeAreaFromOsmTags(tags = {}) {
 }
 
 function administrativeAreaFor(code, lat, lng, explicit = '') {
+  if (NO_ADMINISTRATIVE_AREA_CODES.has(code)) return '';
   if (explicit) return explicit;
   const country = COUNTRIES[code];
   const areas = ADMINISTRATIVE_AREAS[code];

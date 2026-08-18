@@ -75,6 +75,15 @@ node tools/build-pool.js DE JP    # 只重建指定国家
 
 每国抽取约 2500 条街道、门牌、邮编、城市齐全的地址（约 300 KB/国），按国家写入 `data/pool/<代码>.json`。脚本对公共 Overpass 做了限速与端点故障转移，符合其使用礼仪；地址数据变化很慢，一年重建一次也足够。
 
+重建后可使用 [GeoNames](https://www.geonames.org/) 的 `cities500.txt` 和 `admin1CodesASCII.txt` 补齐 State / Province / Region：
+
+```powershell
+node tools/backfill-administrative-areas.js --cities <cities500.txt> --admin1 <admin1CodesASCII.txt>
+```
+
+已有的 OSM 行政区值会保留；需要重新校正所有记录时加 `--replace`。脚本会拒绝将明显跨境的地址填入错误行政区。香港和新加坡没有适合该国际表单字段的州/省层级，因此保持为空。
+地址池中 `a` 表示行政区，`as` 表示数据来源（`osm` 或 `geonames`）。
+
 ## 运行
 
 纯静态站点，无需构建。本地启动一个 HTTP 服务即可（clipboard 等 API 需要 localhost 或 HTTPS 环境）：

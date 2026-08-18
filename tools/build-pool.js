@@ -8,8 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const dataSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
-const { COUNTRIES, administrativeAreaFor, administrativeAreaFromOsmTags } = new Function(
-  dataSrc + '; return { COUNTRIES, administrativeAreaFor, administrativeAreaFromOsmTags };'
+const { COUNTRIES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromOsmTags } = new Function(
+  dataSrc + '; return { COUNTRIES, NO_ADMINISTRATIVE_AREA_CODES, administrativeAreaFromOsmTags };'
 )();
 
 const ENDPOINTS = [
@@ -74,9 +74,10 @@ function extract(el, cityName, strict, code) {
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
   if (lat == null || lng == null) return null;
-  const a = administrativeAreaFor(code, lat, lng, administrativeAreaFromOsmTags(t));
+  const a = NO_ADMINISTRATIVE_AREA_CODES.has(code) ? '' : administrativeAreaFromOsmTags(t);
   return {
-    n, s, p, c, a,
+    n, s, p, c,
+    ...(a ? { a, as: 'osm' } : {}),
     lat: +lat.toFixed(6), lng: +lng.toFixed(6),
     o: `${el.type}/${el.id}`,
   };
@@ -152,4 +153,5 @@ async function buildCountry(code) {
   }
   console.log('\n==== 汇总 ====');
   for (const [c, n] of Object.entries(summary)) console.log(`${c}: ${n} 条${n < MIN_OK ? '  ⚠ 偏少' : ''}`);
+  console.log('\n提示：重建后请运行 tools/backfill-administrative-areas.js 补齐未直接标注的州/省/地区。');
 })();
