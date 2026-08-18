@@ -68,4 +68,18 @@ function deriveAddressProfile(code, metadata) {
   };
 }
 
-module.exports = { derivePostalFormat, subdivisionCodes, deriveAddressProfile };
+async function fetchAddressMetadata(iso, fetchJson, wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      // 查询参数可绕过代理/CDN 暂存的错误页；服务端会忽略它。
+      return await fetchJson(`https://chromium-i18n.appspot.com/ssl-address/data/${iso}?attempt=${attempt}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await wait(attempt * 1000);
+    }
+  }
+  throw lastError;
+}
+
+module.exports = { derivePostalFormat, subdivisionCodes, deriveAddressProfile, fetchAddressMetadata };

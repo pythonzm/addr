@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { readPendingCountry, claimPendingCountry, clearPendingCountry } = require('./country-pending');
-const { deriveAddressProfile } = require('./address-metadata');
+const { deriveAddressProfile, fetchAddressMetadata } = require('./address-metadata');
 
 const DATA_PATH = path.join(__dirname, '..', 'js', 'data.js');
 const dataSrc = fs.readFileSync(DATA_PATH, 'utf8');
@@ -231,7 +231,7 @@ function resolveCountry(all, query) {
   console.log('  读取 Google libaddressinput 邮政元数据…');
   let addressProfile;
   try {
-    const metadata = await fetchJson(`https://chromium-i18n.appspot.com/ssl-address/data/${iso}`);
+    const metadata = await fetchAddressMetadata(iso, fetchJson, sleep);
     addressProfile = deriveAddressProfile(code, metadata);
     if (!POSTAL_FORMATS[addressProfile.postalFormat]) throw new Error(`程序尚不支持邮政格式：${addressProfile.postalFormat}`);
   } catch (error) {

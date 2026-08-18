@@ -1,6 +1,6 @@
 const assert = require('assert');
 const fs = require('fs');
-const { deriveAddressProfile } = require('./tools/address-metadata');
+const { deriveAddressProfile, fetchAddressMetadata } = require('./tools/address-metadata');
 
 const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
 const {
@@ -44,6 +44,21 @@ assert.strictEqual(deriveAddressProfile('XX', { fmt: '%C%n%Z', sub_keys: 'North~
 assert.throws(() => deriveAddressProfile('XX', { fmt: '%A%n%N' }), /无法识别邮政字段顺序/);
 assert.throws(() => deriveAddressProfile('BR', { fmt: '%A%n%N' }), /缺少必要字段/);
 assert.throws(() => deriveAddressProfile('JP', { fmt: '%A%n%N' }), /缺少必要字段/);
+
+(async () => {
+  const requested = [];
+  const metadata = await fetchAddressMetadata('ID', async url => {
+    requested.push(url);
+    if (requested.length < 3) throw new Error('响应内容异常');
+    return { fmt: '%C%n%S %Z' };
+  }, async () => {});
+  assert.strictEqual(metadata.fmt, '%C%n%S %Z');
+  assert.strictEqual(requested.length, 3);
+  assert.ok(requested.every((url, index) => url.endsWith(`ID?attempt=${index + 1}`)));
+})().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
 
 for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
   assert.strictEqual(areas.length, COUNTRIES[code].cities.length, `${code} area mapping must match cities`);
