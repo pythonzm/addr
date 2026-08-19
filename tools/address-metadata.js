@@ -5,6 +5,10 @@ function derivePostalFormat(code, format) {
 
   const fields = [...format.matchAll(/%([CSZ])/g)].map(match => match[1]).filter((field, index, all) => all.indexOf(field) === index);
   const signature = fields.join('');
+  const hasSeparatorBetweenFields = (left, right) => {
+    const between = format.slice(format.indexOf(`%${left}`) + 2, format.indexOf(`%${right}`));
+    return between.includes('%n') || between.includes(',');
+  };
   const requireFields = required => {
     const missing = required.filter(field => !fields.includes(field));
     if (missing.length) throw new Error(`地址元数据缺少必要字段：${missing.map(field => `%${field}`).join('、')}`);
@@ -22,9 +26,10 @@ function derivePostalFormat(code, format) {
   }
   if (signature === 'CZ') return 'city-postcode-comma';
   if (signature === 'ZC' || signature === 'Z') return 'postcode-city';
-  if (signature === 'CSZ') return format.slice(format.indexOf('%C') + 2, format.indexOf('%S')).includes(',')
+  if (signature === 'CSZ') return hasSeparatorBetweenFields('C', 'S')
     ? 'city-area-postcode-comma'
     : 'city-area-postcode';
+  if (signature === 'ZCS' && hasSeparatorBetweenFields('C', 'S')) return 'postcode-city-area-comma';
   const formats = {
     C: 'city-postcode-comma',
     CS: 'city-area',

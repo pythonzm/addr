@@ -32,6 +32,7 @@ const metadataCases = [
   ['TR', { fmt: '%N%n%O%n%A%n%Z %C/%S', require: 'ACZ' }, 'postcode-city-area', true],
   ['KR', { fmt: '%S %C%D%n%A%n%O%n%N%n%Z', require: 'ACSZ' }, 'area-city-postcode', true],
   ['TW', { fmt: '%Z%n%S%C%n%A%n%O%n%N', require: 'ACSZ' }, 'postcode-area-city', true],
+  ['MY', { fmt: '%N%n%O%n%A%n%D%n%Z %C%n%S', require: 'ACSZ' }, 'postcode-city-area-comma', true],
 ];
 for (const [code, metadata, postalFormat, hasAdministrativeArea] of metadataCases) {
   const profile = deriveAddressProfile(code, metadata);
