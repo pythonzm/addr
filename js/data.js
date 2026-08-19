@@ -211,7 +211,7 @@ const COUNTRIES = {
     l: ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Mendoza', 'Bautista', 'Villanueva', 'Aquino'],
   },
   MY: { // 由 add-country.js 自动生成；部分字段为通用占位，建议按当地习惯完善
-    name: '马来西亚', en: 'Malaysia', lang: 'en', fmt: 'NS',
+    name: '马来西亚', en: 'Malaysia', lang: 'en', fmt: 'NS', postalFormat: 'postcode-city-area-comma',
     cities: [['Kuala Lumpur', 3.15, 101.69, 0.04], ['Kajang', 2.99, 101.79, 0.04], ['Subang Jaya', 3.05, 101.58, 0.04], ['Klang', 3.04, 101.44, 0.04]],
     phones: ['+60 123 ### ###'],
     m: ['Muhamad', 'Ahmad', 'Adam', 'Amar', 'Wan', 'Iman', 'Harraz', 'Izz'],
@@ -246,6 +246,7 @@ const POSTAL_FORMATS = {
   japan: '日本：〒邮编 都道府县 城市',
   'postcode-area-city': '街道, 邮编 行政区 城市, 国家',
   'postcode-city-area': '街道, 邮编 城市 行政区, 国家',
+  'postcode-city-area-comma': '街道, 邮编 城市, 行政区, 国家',
   'area-city-postcode': '街道, 行政区 城市 邮编, 国家',
   'area-city': '街道, 行政区 城市, 国家',
   'city-area': '街道, 城市 行政区, 国家',
@@ -261,7 +262,7 @@ function postalFormatForCountry(code) {
   if (code === 'JP') return 'japan';
   if (code === 'UK') return 'city-postcode-comma';
   if (['KR', 'TW', 'VN'].includes(code)) return 'postcode-area-city';
-  if (['TH', 'MY', 'TR'].includes(code)) return 'postcode-city-area';
+  if (['TH', 'TR'].includes(code)) return 'postcode-city-area';
   return 'postcode-city';
 }
 
@@ -292,7 +293,7 @@ const ADMINISTRATIVE_AREAS = {
   HK: ['Hong Kong', 'Hong Kong', 'Hong Kong', 'Hong Kong'],
   TH: ['Bangkok', 'Nonthaburi', 'Samut Prakan', 'Nonthaburi'],
   PH: ['Metro Manila', 'Metro Manila', 'Rizal', 'Metro Manila'],
-  MY: ['Kuala Lumpur', 'Selangor', 'Selangor', 'Selangor'],
+  MY: ['Wilayah Persekutuan Kuala Lumpur', 'Selangor', 'Selangor', 'Selangor'],
   TR: ['Ankara', 'Adana', 'Gaziantep', 'Konya'],
 };
 function countryHasAdministrativeArea(code) {
@@ -367,7 +368,10 @@ function administrativeAreaFromOsmTags(tags = {}) {
 
 function administrativeAreaFor(code, lat, lng, explicit = '') {
   if (!countryHasAdministrativeArea(code)) return '';
-  if (explicit) return explicit;
+  if (explicit) {
+    if (code === 'MY' && explicit === 'Kuala Lumpur') return 'Wilayah Persekutuan Kuala Lumpur';
+    return explicit;
+  }
   const country = COUNTRIES[code];
   const areas = ADMINISTRATIVE_AREAS[code];
   if (!country || !areas || !Number.isFinite(lat) || !Number.isFinite(lng)) return '';
@@ -408,6 +412,8 @@ function formatFullAddress({ code, line1, postcode, city, administrativeArea, ad
     locality = [postcode, area, city].filter(Boolean).join(' ');
   } else if (postalFormat === 'postcode-city-area') {
     locality = [postcode, city, area].filter(Boolean).join(' ');
+  } else if (postalFormat === 'postcode-city-area-comma') {
+    localityParts = [[postcode, city].filter(Boolean).join(' '), area];
   } else if (postalFormat === 'area-city-postcode') {
     locality = [area, city, postcode].filter(Boolean).join(' ');
   } else if (postalFormat === 'area-city') {

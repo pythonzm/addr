@@ -115,6 +115,8 @@ assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', post
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'UK', line1: '20B Maxted Road', postcode: 'SE15 4LF', city: 'London', administrativeArea: 'England', administrativeAreaCode: '', country: 'United Kingdom' }), '20B Maxted Road, London, SE15 4LF, United Kingdom');
 assert.strictEqual(formatFullAddress({ code: 'PH', line1: '116 Hoover Street', postcode: '1550', city: 'San Juan', administrativeArea: 'National Capital Region', administrativeAreaCode: '', country: 'Philippines' }), '116 Hoover Street, San Juan, National Capital Region 1550, Philippines');
+assert.strictEqual(administrativeAreaFor('MY', 3.15, 101.69, 'Kuala Lumpur'), 'Wilayah Persekutuan Kuala Lumpur');
+assert.strictEqual(formatFullAddress({ code: 'MY', line1: '12 Jalan Ampang', postcode: '50450', city: 'Kuala Lumpur', administrativeArea: 'Wilayah Persekutuan Kuala Lumpur', administrativeAreaCode: '', country: 'Malaysia' }), '12 Jalan Ampang, 50450 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur, Malaysia');
 assert.strictEqual(postalFormatForCountry('DE'), 'postcode-city');
 assert.strictEqual(postalFormatForCountry('UK'), 'city-postcode-comma');
 assert.ok(Object.keys(POSTAL_FORMATS).includes(postalFormatForCountry('DE')));
