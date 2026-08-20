@@ -37,6 +37,7 @@ const ICONS = {
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initCountrySelector();
+  initTaxRegionSelector();
   initCountryPills();
   initMap();
   initShortcuts();
@@ -104,6 +105,7 @@ function initCountrySelector() {
   sel.addEventListener('change', () => {
     localStorage.setItem('addr_country', sel.value);
     highlightPill(sel.value);
+    refreshTaxRegionSelector();
     generate();
   });
 
@@ -117,8 +119,40 @@ function initCountrySelector() {
     if (sel.value && sel.value !== prev) {
       localStorage.setItem('addr_country', sel.value);
       highlightPill(sel.value);
+      refreshTaxRegionSelector();
       generate();
     }
+  });
+}
+
+function refreshTaxRegionSelector() {
+  const code = document.getElementById('countrySelect').value;
+  const select = document.getElementById('taxRegionSelect');
+  const note = document.getElementById('taxRegionNote');
+  const presets = taxRegionPresetsForCountry(code);
+  select.hidden = presets.length === 0;
+  note.hidden = presets.length === 0;
+  document.getElementById('selectInputsRow').classList.toggle('tax-filter-active', presets.length > 0);
+  select.innerHTML = `<option value="">${esc(t('tax_region_all'))}</option>` + presets
+    .map(preset => `<option value="${esc(preset.id)}">${esc(t(preset.labelKey))}</option>`).join('');
+  const saved = localStorage.getItem(`addr_tax_region_${code}`) || '';
+  select.value = presets.some(preset => preset.id === saved) ? saved : '';
+  updateTaxRegionNote();
+}
+
+function updateTaxRegionNote() {
+  const preset = TAX_REGION_PRESETS[document.getElementById('taxRegionSelect').value];
+  document.getElementById('taxRegionNote').textContent = preset ? t(preset.noteKey) : t('tax_region_hint');
+}
+
+function initTaxRegionSelector() {
+  const select = document.getElementById('taxRegionSelect');
+  refreshTaxRegionSelector();
+  select.addEventListener('change', () => {
+    const code = document.getElementById('countrySelect').value;
+    localStorage.setItem(`addr_tax_region_${code}`, select.value);
+    updateTaxRegionNote();
+    generate();
   });
 }
 
@@ -146,6 +180,7 @@ function initCountryPills() {
       document.getElementById('countrySelect').value = code;
       localStorage.setItem('addr_country', code);
       highlightPill(code);
+      refreshTaxRegionSelector();
       generate();
     };
     container.appendChild(btn);
@@ -290,8 +325,11 @@ async function generate() {
     const c = COUNTRIES[code];
     if (!c) throw new Error(t('country_no_match'));
     const pool = await loadPool(code);
-    current = (pool && pool.addrs && pool.addrs.length)
-      ? fromPool(code, c, pool)
+    const presetId = document.getElementById('taxRegionSelect')?.value || '';
+    const poolAddresses = pool?.addrs ? filterAddressesByTaxRegion(pool.addrs, presetId) : [];
+    if (presetId && !poolAddresses.length) throw new Error(t('tax_region_no_addresses'));
+    current = poolAddresses.length
+      ? fromPool(code, c, { ...pool, addrs: poolAddresses })
       : await fromLive(code, c);
     renderResult();
   } catch (e) {
@@ -651,6 +689,7 @@ window.onLangChange = () => {
   fillCountrySelect();
   initCountryPills();
   highlightPill(document.getElementById('countrySelect').value);
+  refreshTaxRegionSelector();
   if (current) renderResult();
   renderSaved();
 };

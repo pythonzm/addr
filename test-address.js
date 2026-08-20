@@ -19,7 +19,18 @@ const {
   administrativeAreasEquivalent,
   postalFormatForCountry,
   formatFullAddress,
-} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress };')();
+  taxRegionPresetsForCountry,
+  filterAddressesByTaxRegion,
+} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress, taxRegionPresetsForCountry, filterAddressesByTaxRegion };')();
+
+assert.deepStrictEqual(taxRegionPresetsForCountry('US').map(preset => preset.id), ['US_NO_STATE_SALES_TAX']);
+assert.deepStrictEqual(taxRegionPresetsForCountry('CA'), []);
+assert.deepStrictEqual(
+  filterAddressesByTaxRegion([
+    { a: 'Oregon' }, { a: 'CA' }, { a: 'DE' }, { a: 'AK' }, { a: 'NH' }, { a: 'MT' },
+  ], 'US_NO_STATE_SALES_TAX').map(address => address.a),
+  ['Oregon', 'DE', 'AK', 'NH', 'MT'],
+);
 
 const metadataCases = [
   ['US', { fmt: '%N%n%O%n%A%n%C, %S %Z', require: 'ACSZ', sub_keys: 'CA~NY', sub_names: 'California~New York', sub_isoids: 'CA~NY' }, 'city-area-postcode-comma', true],
@@ -80,6 +91,7 @@ for (const [code, areas] of Object.entries(ADMINISTRATIVE_AREAS)) {
 assert.strictEqual(administrativeAreaFor('TR', 37.906156, 32.502692), 'Konya');
 assert.strictEqual(administrativeAreaFor('UK', 51.465851, -0.072612), 'England');
 assert.strictEqual(administrativeAreaFor('US', 34.05, -118.26), 'California');
+assert.strictEqual(administrativeAreaFor('US', 45.52, -122.68, 'OR'), 'Oregon');
 assert.strictEqual(administrativeAreaFor('TR', 37.9, 32.5, 'Explicit Province'), 'Explicit Province');
 assert.strictEqual(administrativeAreaFor('SG', 1.32, 103.85, 'Singapore'), '');
 assert.strictEqual(administrativeAreaFor('HK', 22.28, 114.16, 'Hong Kong'), '');
@@ -155,6 +167,9 @@ for (const code of Object.keys(COUNTRIES)) {
 }
 
 const loadPool = code => JSON.parse(fs.readFileSync(`${__dirname}/data/pool/${code}.json`, 'utf8')).addrs;
+for (const area of ['Alaska', 'Delaware', 'Montana', 'New Hampshire', 'Oregon']) {
+  assert.ok(loadPool('US').some(address => address.a === area), `US pool should cover tax preset area ${area}`);
+}
 for (const code of ['US', 'CA', 'AU', 'BR']) {
   for (const area of new Set(loadPool(code).map(address => address.a))) {
     assert.ok(administrativeAreaCodeFor(code, area), `${code} ${area} should have a postal abbreviation`);

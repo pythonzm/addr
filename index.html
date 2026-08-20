@@ -103,7 +103,7 @@
 
       <div class="toolbar-grid">
         <div class="select-wrapper">
-          <div class="select-inputs-row">
+          <div id="selectInputsRow" class="select-inputs-row">
             <div class="filter-input-wrap">
               <div class="filter-icon">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -111,7 +111,9 @@
               <input id="countryFilter" class="country-filter" type="text" placeholder="筛选国家 / 代码..." data-i18n-placeholder="filter_country_placeholder">
             </div>
             <select id="countrySelect" class="select-custom"></select>
+            <select id="taxRegionSelect" class="select-custom" hidden aria-label="Tax region"></select>
           </div>
+          <div id="taxRegionNote" class="tax-region-note" hidden></div>
         </div>
 
         <div class="actions-group">

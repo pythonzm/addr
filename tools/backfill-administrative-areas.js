@@ -24,8 +24,8 @@ if (!citiesFile || !adminFile) {
 
 const poolDir = path.join(__dirname, '..', 'data', 'pool');
 const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
-const { countryHasAdministrativeArea } = new Function(
-  dataSource + '; return { countryHasAdministrativeArea };'
+const { countryHasAdministrativeArea, administrativeAreaFor } = new Function(
+  dataSource + '; return { countryHasAdministrativeArea, administrativeAreaFor };'
 )();
 const poolCodes = codes.length
   ? codes
@@ -138,6 +138,7 @@ for (const code of poolCodes) {
       continue;
     }
     if (address.a && !replace) {
+      address.a = administrativeAreaFor(code, address.lat, address.lng, address.a);
       addrs.push(address);
       continue;
     }

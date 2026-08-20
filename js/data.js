@@ -5,7 +5,7 @@
 const COUNTRIES = {
   US: {
     flag: '🇺🇸', name: '美国', en: 'United States', lang: 'en', fmt: 'NS',
-    cities: [['New York', 40.73, -73.99, .06], ['Los Angeles', 34.05, -118.26, .08], ['Chicago', 41.88, -87.66, .06], ['Seattle', 47.61, -122.33, .05], ['Boston', 42.35, -71.07, .04]],
+    cities: [['Portland', 45.52, -122.68, .05], ['Wilmington', 39.74, -75.55, .03], ['Manchester', 42.995, -71.455, .03], ['Billings', 45.783, -108.5, .03], ['Anchorage', 61.218, -149.9, .04], ['New York', 40.73, -73.99, .06], ['Los Angeles', 34.05, -118.26, .08], ['Chicago', 41.88, -87.66, .06], ['Seattle', 47.61, -122.33, .05], ['Boston', 42.35, -71.07, .04]],
     phones: ['+1 212 N## ####', '+1 415 N## ####', '+1 312 N## ####', '+1 206 N## ####', '+1 617 N## ####'],
     m: ['James', 'Michael', 'David', 'Daniel', 'Ryan', 'Kevin', 'Tyler', 'Ethan'],
     f: ['Emily', 'Sarah', 'Jessica', 'Ashley', 'Emma', 'Olivia', 'Megan', 'Lauren'],
@@ -255,6 +255,31 @@ const POSTAL_FORMATS = {
 };
 const POOL_MIN_PUBLISH = 100;
 
+// “免税”在不同国家含义差异很大；这里只收录边界清晰、可按一级行政区筛选的规则。
+// 美国五州指不征收州级销售税，Alaska 仍可能存在地方销售税，并非所有交易绝对免税。
+const TAX_REGION_PRESETS = {
+  US_NO_STATE_SALES_TAX: {
+    id: 'US_NO_STATE_SALES_TAX',
+    countryCode: 'US',
+    labelKey: 'tax_region_us_no_state_sales_tax',
+    noteKey: 'tax_region_us_note',
+    administrativeAreas: ['Alaska', 'Delaware', 'Montana', 'New Hampshire', 'Oregon'],
+  },
+};
+
+function taxRegionPresetsForCountry(code) {
+  return Object.values(TAX_REGION_PRESETS).filter(preset => preset.countryCode === code);
+}
+
+function filterAddressesByTaxRegion(addresses, presetId) {
+  if (!presetId) return addresses;
+  const preset = TAX_REGION_PRESETS[presetId];
+  if (!preset) return [];
+  const allowed = new Set(preset.administrativeAreas);
+  const allowedCodes = new Set(preset.administrativeAreas.map(area => administrativeAreaCodeFor(preset.countryCode, area)).filter(Boolean));
+  return addresses.filter(address => allowed.has(address.a) || allowedCodes.has(String(address.a || '').toUpperCase()));
+}
+
 function postalFormatForCountry(code) {
   if (code === 'US' || code === 'CA') return 'city-area-postcode-comma';
   if (code === 'AU') return 'city-area-postcode';
@@ -269,7 +294,7 @@ function postalFormatForCountry(code) {
 // 与各国 cities 数组按下标对应，作为旧地址池缺少行政区时的坐标兜底。
 // 行政区统一使用适合国际表单 State / Province / Region 字段的英文名称。
 const ADMINISTRATIVE_AREAS = {
-  US: ['New York', 'California', 'Illinois', 'Washington', 'Massachusetts'],
+  US: ['Oregon', 'Delaware', 'New Hampshire', 'Montana', 'Alaska', 'New York', 'California', 'Illinois', 'Washington', 'Massachusetts'],
   CA: ['Ontario', 'British Columbia', 'Quebec', 'Alberta'],
   UK: ['England', 'England', 'England', 'Scotland'],
   DE: ['Berlin', 'Bavaria', 'Hamburg', 'North Rhine-Westphalia', 'Hesse'],
@@ -328,8 +353,18 @@ const ADMINISTRATIVE_AREA_CODES = {
   },
 };
 
+function administrativeAreaEntries(code) {
+  const codes = { ...(ADMINISTRATIVE_AREA_CODES[code] || {}), ...(COUNTRIES[code]?.administrativeAreaCodes || {}) };
+  return Object.entries(codes);
+}
+
+function administrativeAreaMatch(code, administrativeArea) {
+  const normalized = String(administrativeArea || '').toLowerCase();
+  return administrativeAreaEntries(code).find(([name, postalCode]) => name.toLowerCase() === normalized || postalCode.toLowerCase() === normalized);
+}
+
 function administrativeAreaCodeFor(code, administrativeArea) {
-  return COUNTRIES[code]?.administrativeAreaCodes?.[administrativeArea] || ADMINISTRATIVE_AREA_CODES[code]?.[administrativeArea] || '';
+  return administrativeAreaMatch(code, administrativeArea)?.[1] || '';
 }
 
 function formatAdministrativeArea(administrativeArea, administrativeAreaCode) {
@@ -370,6 +405,8 @@ function administrativeAreaFor(code, lat, lng, explicit = '') {
   if (!countryHasAdministrativeArea(code)) return '';
   if (explicit) {
     if (code === 'MY' && explicit === 'Kuala Lumpur') return 'Wilayah Persekutuan Kuala Lumpur';
+    const canonical = administrativeAreaMatch(code, explicit);
+    if (canonical) return canonical[0];
     return explicit;
   }
   const country = COUNTRIES[code];

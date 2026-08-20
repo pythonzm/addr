@@ -424,9 +424,24 @@ body {
 
 .select-inputs-row {
   display: grid;
-  grid-template-columns: minmax(140px, 180px) 1fr;
+  grid-template-columns: minmax(140px, 180px) minmax(180px, 1fr);
   gap: 10px;
   align-items: center;
+}
+
+.select-inputs-row.tax-filter-active {
+  grid-template-columns: minmax(140px, 180px) minmax(180px, 1fr) minmax(210px, 1fr);
+}
+
+.select-inputs-row > [hidden] {
+  display: none;
+}
+
+.tax-region-note {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 .filter-input-wrap {
@@ -1321,7 +1336,8 @@ td.cell-copyable:hover {
     font-size: 0.76rem;
   }
 
-  .select-inputs-row {
+  .select-inputs-row,
+  .select-inputs-row.tax-filter-active {
     grid-template-columns: 1fr;
     gap: 8px;
   }
