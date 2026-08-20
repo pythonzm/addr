@@ -304,7 +304,17 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true });
   }
 
-  // ---- 页面 ----
+  // ---- Favicon 与页面 ----
+  if (req.method === 'GET' && url.pathname === '/favicon.svg') {
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    res.end(fs.readFileSync(path.join(ROOT, 'favicon.svg')));
+    return;
+  }
+  if (req.method === 'GET' && url.pathname === '/favicon.ico') {
+    res.writeHead(200, { 'Content-Type': 'image/x-icon' });
+    res.end(fs.readFileSync(path.join(ROOT, 'favicon.ico')));
+    return;
+  }
   if (req.method === 'GET' && url.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(AUTH_ON && !isAuthed(req) ? LOGIN_PAGE : fs.readFileSync(path.join(__dirname, 'admin.html')));

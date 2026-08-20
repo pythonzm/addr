@@ -1,0 +1,11 @@
+# robots.txt for Real Address Generator (OSM Verified)
+User-agent: *
+Allow: /
+Allow: /css/
+Allow: /js/
+Allow: /data/
+Disallow: /tools/
+Disallow: /.git/
+Disallow: /.github/
+
+Sitemap: sitemap.xml
