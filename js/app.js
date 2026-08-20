@@ -423,8 +423,10 @@ function renderResult() {
   document.getElementById('result').innerHTML = fields.map(f => `
     <div class="field-card ${f.fullWidth ? 'full-width' : ''}" onclick="copyText('${encodeURIComponent(f.raw)}', true, '${esc(f.label)}')">
       <div class="field-icon">${f.icon}</div>
-      <div class="field-label">${f.label}</div>
-      <div class="field-value ${f.isMono ? 'mono' : ''}">${esc(f.val)}</div>
+      <div class="field-content">
+        <div class="field-label">${f.label}</div>
+        <div class="field-value ${f.isMono ? 'mono' : ''}">${esc(f.val)}</div>
+      </div>
       <div class="field-copy-btn" title="${esc(t('title_copy'))}">${ICONS.copy}</div>
     </div>
   `).join('');
