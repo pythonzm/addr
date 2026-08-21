@@ -4,6 +4,10 @@ const { deriveAddressProfile, fetchAddressMetadata } = require('./tools/address-
 const { topCitiesFromText } = require('./tools/geonames-cities');
 
 const dataSource = fs.readFileSync(__dirname + '/js/data.js', 'utf8');
+const indexSource = fs.readFileSync(__dirname + '/index.html', 'utf8');
+for (const asset of ['css/style.css', 'js/data.js', 'js/i18n.js', 'js/app.js']) {
+  assert.match(indexSource, new RegExp(`${asset.replace('.', '\\.') }\\?v=\\d+`), `${asset} should be cache-versioned`);
+}
 const {
   COUNTRIES,
   POSTAL_FORMATS,
