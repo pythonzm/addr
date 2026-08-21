@@ -24,6 +24,10 @@ function derivePostalFormat(code, format) {
     requireFields(['S', 'Z']);
     return 'japan';
   }
+  if (code === 'SG') {
+    requireFields(['Z']);
+    return 'city-postcode';
+  }
   if (signature === 'CZ') return 'city-postcode-comma';
   if (signature === 'ZC' || signature === 'Z') return 'postcode-city';
   if (signature === 'CSZ') return hasSeparatorBetweenFields('C', 'S')

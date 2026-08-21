@@ -149,7 +149,7 @@ const COUNTRIES = {
     lr: ['chen', 'lin', 'huang', 'zhang', 'li', 'wang', 'wu', 'liu'],
   },
   SG: {
-    flag: '🇸🇬', name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS', noAdministrativeArea: true,
+    flag: '🇸🇬', name: '新加坡', en: 'Singapore', lang: 'en', fmt: 'NS', postalFormat: 'city-postcode', noAdministrativeArea: true,
     cities: [['Singapore', 1.32, 103.85, .07]],
     phones: ['+65 8### ####', '+65 9### ####'],
     m: ['Wei Ming', 'Jun Jie', 'Kai Wen', 'Zhi Hao', 'Arjun', 'Ryan', 'Ethan', 'Daniel'],
@@ -240,6 +240,7 @@ const COUNTRIES = {
 const POSTAL_FORMATS = {
   'postcode-city': '街道, 邮编 城市, 国家',
   'city-postcode-comma': '街道, 城市, 邮编, 国家',
+  'city-postcode': '街道, 城市 邮编, 国家',
   'city-area-postcode-comma': '街道, 城市, 州代码 邮编, 国家',
   'city-area-postcode': '街道, 城市 州代码 邮编, 国家',
   brazil: '巴西：城市 - UF, 邮编',
@@ -445,6 +446,8 @@ function formatFullAddress({ code, line1, postcode, city, administrativeArea, ad
     locality = [postcode ? `〒${postcode}` : '', area, city].filter(Boolean).join(' ');
   } else if (postalFormat === 'city-postcode-comma') {
     locality = [city, postcode].filter(Boolean).join(', ');
+  } else if (postalFormat === 'city-postcode') {
+    locality = [city, postcode].filter(Boolean).join(' ');
   } else if (postalFormat === 'postcode-area-city') {
     locality = [postcode, area, city].filter(Boolean).join(' ');
   } else if (postalFormat === 'postcode-city-area') {

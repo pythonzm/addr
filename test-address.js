@@ -38,7 +38,7 @@ const metadataCases = [
   ['DE', { fmt: '%N%n%O%n%A%n%Z %C', require: 'ACZ' }, 'postcode-city', false],
   ['BR', { fmt: '%O%n%N%n%A%n%D%n%C-%S%n%Z', require: 'ASCZ' }, 'brazil', true],
   ['JP', { fmt: '〒%Z%n%S%n%A%n%O%n%N', require: 'ASZ' }, 'japan', true],
-  ['SG', { fmt: '%N%n%O%n%A%nSINGAPORE %Z', require: 'AZ' }, 'postcode-city', false],
+  ['SG', { fmt: '%N%n%O%n%A%nSINGAPORE %Z', require: 'AZ' }, 'city-postcode', false],
   ['HK', { fmt: '%S%n%C%n%D%n%A%n%O%n%N', require: 'AS' }, 'area-city', true],
   ['TR', { fmt: '%N%n%O%n%A%n%Z %C/%S', require: 'ACZ' }, 'postcode-city-area', true],
   ['KR', { fmt: '%S %C%D%n%A%n%O%n%N%n%Z', require: 'ACSZ' }, 'area-city-postcode', true],
@@ -95,7 +95,7 @@ assert.strictEqual(administrativeAreaFor('US', 45.52, -122.68, 'OR'), 'Oregon');
 assert.strictEqual(administrativeAreaFor('TR', 37.9, 32.5, 'Explicit Province'), 'Explicit Province');
 assert.strictEqual(administrativeAreaFor('SG', 1.32, 103.85, 'Singapore'), '');
 assert.strictEqual(administrativeAreaFor('HK', 22.28, 114.16, 'Hong Kong'), '');
-assert.strictEqual(formatFullAddress({ code: 'SG', line1: '1 Test Road', postcode: '123456', city: 'Singapore', administrativeArea: 'Invented', administrativeAreaCode: 'ST', country: 'Singapore' }), '1 Test Road, 123456 Singapore, Singapore');
+assert.strictEqual(formatFullAddress({ code: 'SG', line1: '1 Test Road', postcode: '123456', city: 'Singapore', administrativeArea: 'Invented', administrativeAreaCode: 'ST', country: 'Singapore' }), '1 Test Road, Singapore 123456, Singapore');
 assert.strictEqual(administrativeAreaFor('XX', 0, 0), '');
 
 assert.strictEqual(administrativeAreaFromAddress({ state: 'State', province: 'Province' }), 'State');
