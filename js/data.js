@@ -138,7 +138,7 @@ const COUNTRIES = {
     lr: ['kim', 'lee', 'park', 'choi', 'jung', 'kang', 'cho', 'yun'],
   },
   TW: {
-    flag: '🇹🇼', name: '中国台湾', en: 'Taiwan', lang: 'zh-TW', fmt: 'SN',
+    flag: '🇹🇼', name: '中国台湾', en: 'Taiwan', lang: 'zh-TW', fmt: 'TW', postalFormat: 'taiwan',
     cities: [['台北', 25.04, 121.55, .05], ['台中', 24.15, 120.66, .04], ['高雄', 22.63, 120.30, .04]],
     phones: ['+886 9## ### ###'],
     m: ['家豪', '志明', '俊傑', '建宏', '冠宇', '宗翰', '柏翰', '承翰'],
@@ -245,6 +245,7 @@ const POSTAL_FORMATS = {
   'city-area-postcode': '街道, 城市 州代码 邮编, 国家',
   brazil: '巴西：城市 - UF, 邮编',
   japan: '日本：〒邮编 都道府县 城市',
+  taiwan: '台湾：邮编 县市区街路门牌号',
   'postcode-area-city': '街道, 邮编 行政区 城市, 国家',
   'postcode-city-area': '街道, 邮编 城市 行政区, 国家',
   'postcode-city-area-comma': '街道, 邮编 城市, 行政区, 国家',
@@ -287,9 +288,17 @@ function postalFormatForCountry(code) {
   if (code === 'BR') return 'brazil';
   if (code === 'JP') return 'japan';
   if (code === 'UK') return 'city-postcode-comma';
-  if (['KR', 'TW', 'VN'].includes(code)) return 'postcode-area-city';
+  if (['KR', 'VN'].includes(code)) return 'postcode-area-city';
   if (['TH', 'TR'].includes(code)) return 'postcode-city-area';
   return 'postcode-city';
+}
+
+function formatStreetLine(fmt, street, number) {
+  if (!street) return number || '';
+  if (fmt === 'NS') return `${number} ${street}`;
+  if (fmt === 'S,N') return `${street}, ${number}`;
+  if (fmt === 'TW') return `${street}${number || ''}${number && !/號/.test(number) ? '號' : ''}`;
+  return `${street} ${number}`;
 }
 
 // 与各国 cities 数组按下标对应，作为旧地址池缺少行政区时的坐标兜底。
@@ -435,6 +444,10 @@ function formatFullAddress({ code, line1, postcode, city, administrativeArea, ad
   let locality;
   let localityParts;
   const postalFormat = COUNTRIES[code]?.postalFormat || postalFormatForCountry(code);
+  if (postalFormat === 'taiwan') {
+    const prefix = [postcode, city].filter(Boolean).join(' ');
+    return [[prefix, line1].filter(Boolean).join(''), country].filter(Boolean).join(', ');
+  }
   if (postalFormat === 'city-area-postcode-comma') {
     locality = [city, [areaLabel, postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   } else if (postalFormat === 'city-area-postcode') {

@@ -306,13 +306,6 @@ async function nominatimReverse(lat, lng, lang) {
   return resp.json();
 }
 
-function formatLine1(fmt, street, num) {
-  if (!street) return num || '';
-  if (fmt === 'NS') return `${num} ${street}`;
-  if (fmt === 'S,N') return `${street}, ${num}`;
-  return `${street} ${num}`;
-}
-
 // ---------- 生成 ----------
 async function generate() {
   const btn = document.getElementById('genBtn');
@@ -344,7 +337,7 @@ async function generate() {
 // 模式一：本地地址池
 function fromPool(code, c, pool) {
   const a = pick(pool.addrs);
-  const line1 = formatLine1(c.fmt, a.s, a.n);
+  const line1 = formatStreetLine(c.fmt, a.s, a.n);
   const administrativeArea = administrativeAreaFor(code, a.lat, a.lng, a.a || '');
   const administrativeAreaCode = administrativeAreaCodeFor(code, administrativeArea);
   const address = formatFullAddress({ code, line1, postcode: a.p, city: a.c, administrativeArea, administrativeAreaCode, country: c.en });
@@ -386,7 +379,7 @@ async function fromLive(code, c) {
     }
   }
 
-  const line1 = formatLine1(c.fmt, street, num);
+  const line1 = formatStreetLine(c.fmt, street, num);
   administrativeArea = administrativeAreaFor(code, lat, lng, administrativeArea);
   const administrativeAreaCode = administrativeAreaCodeFor(code, administrativeArea);
   const address = formatFullAddress({ code, line1, postcode, city, administrativeArea, administrativeAreaCode, country: c.en });

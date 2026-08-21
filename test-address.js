@@ -25,7 +25,8 @@ const {
   formatFullAddress,
   taxRegionPresetsForCountry,
   filterAddressesByTaxRegion,
-} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress, taxRegionPresetsForCountry, filterAddressesByTaxRegion };')();
+  formatStreetLine,
+} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress, taxRegionPresetsForCountry, filterAddressesByTaxRegion, formatStreetLine };')();
 
 assert.deepStrictEqual(taxRegionPresetsForCountry('US').map(preset => preset.id), ['US_NO_STATE_SALES_TAX']);
 assert.deepStrictEqual(taxRegionPresetsForCountry('CA'), []);
@@ -46,7 +47,7 @@ const metadataCases = [
   ['HK', { fmt: '%S%n%C%n%D%n%A%n%O%n%N', require: 'AS' }, 'area-city', true],
   ['TR', { fmt: '%N%n%O%n%A%n%Z %C/%S', require: 'ACZ' }, 'postcode-city-area', true],
   ['KR', { fmt: '%S %C%D%n%A%n%O%n%N%n%Z', require: 'ACSZ' }, 'area-city-postcode', true],
-  ['TW', { fmt: '%Z%n%S%C%n%A%n%O%n%N', require: 'ACSZ' }, 'postcode-area-city', true],
+  ['TW', { fmt: '%Z%n%S%C%n%A%n%O%n%N', require: 'ACSZ' }, 'taiwan', true],
   ['MY', { fmt: '%N%n%O%n%A%n%D%n%Z %C%n%S', require: 'ACSZ' }, 'postcode-city-area-comma', true],
 ];
 for (const [code, metadata, postalFormat, hasAdministrativeArea] of metadataCases) {
@@ -127,7 +128,11 @@ assert.strictEqual(formatFullAddress({ code: 'AU', line1: '10 George Street', po
 assert.strictEqual(formatFullAddress({ code: 'BR', line1: 'Avenida Paulista, 100', postcode: '01310-100', city: 'São Paulo', administrativeArea: 'Sao Paulo', administrativeAreaCode: 'SP', country: 'Brazil' }), 'Avenida Paulista, 100, São Paulo - SP, 01310-100, Brazil');
 assert.strictEqual(formatFullAddress({ code: 'JP', line1: '千代田1', postcode: '100-0001', city: '千代田区', administrativeArea: 'Tokyo', administrativeAreaCode: '', country: 'Japan' }), '千代田1, 〒100-0001 Tokyo 千代田区, Japan');
 assert.strictEqual(formatFullAddress({ code: 'KR', line1: '테헤란로 1', postcode: '06236', city: '서울특별시', administrativeArea: 'Seoul', administrativeAreaCode: '', country: 'South Korea' }), '테헤란로 1, 06236 서울특별시, South Korea');
-assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路 1 號', postcode: '100', city: '台北市', administrativeArea: 'Taipei City', administrativeAreaCode: '', country: 'Taiwan' }), '信義路 1 號, 100 台北市, Taiwan');
+assert.strictEqual(formatStreetLine('TW', '信義路', '1'), '信義路1號');
+assert.strictEqual(formatStreetLine('TW', '信義路', '1號'), '信義路1號');
+assert.strictEqual(formatStreetLine('TW', '林森北路', '561號之7'), '林森北路561號之7');
+assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路1號', postcode: '100', city: '台北市', administrativeArea: 'Taipei City', administrativeAreaCode: '', country: 'Taiwan' }), '100 台北市信義路1號, Taiwan');
+assert.strictEqual(formatFullAddress({ code: 'TW', line1: '文心南五路一段398巷6號', postcode: '408', city: '臺中市南屯區', administrativeArea: 'Taichung City', administrativeAreaCode: '', country: 'Taiwan' }), '408 臺中市南屯區文心南五路一段398巷6號, Taiwan');
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Selçuklu/Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Selçuklu/Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'UK', line1: '20B Maxted Road', postcode: 'SE15 4LF', city: 'London', administrativeArea: 'England', administrativeAreaCode: '', country: 'United Kingdom' }), '20B Maxted Road, London, SE15 4LF, United Kingdom');

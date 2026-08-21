@@ -28,6 +28,10 @@ function derivePostalFormat(code, format) {
     requireFields(['Z']);
     return 'city-postcode';
   }
+  if (code === 'TW') {
+    requireFields(['S', 'Z']);
+    return 'taiwan';
+  }
   if (signature === 'CZ') return 'city-postcode-comma';
   if (signature === 'ZC' || signature === 'Z') return 'postcode-city';
   if (signature === 'CSZ') return hasSeparatorBetweenFields('C', 'S')
