@@ -26,7 +26,8 @@ const {
   taxRegionPresetsForCountry,
   filterAddressesByTaxRegion,
   formatStreetLine,
-} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress, taxRegionPresetsForCountry, filterAddressesByTaxRegion, formatStreetLine };')();
+  taiwanLocalityFor,
+} = new Function(dataSource + '; return { COUNTRIES, POSTAL_FORMATS, POOL_MIN_PUBLISH, ADMINISTRATIVE_AREAS, ADMINISTRATIVE_AREA_CODES, countryHasAdministrativeArea, administrativeAreaFromAddress, administrativeAreaFromOsmTags, administrativeAreaFor, administrativeAreaCodeFor, formatAdministrativeArea, administrativeAreasEquivalent, postalFormatForCountry, formatFullAddress, taxRegionPresetsForCountry, filterAddressesByTaxRegion, formatStreetLine, taiwanLocalityFor };')();
 
 assert.deepStrictEqual(taxRegionPresetsForCountry('US').map(preset => preset.id), ['US_NO_STATE_SALES_TAX']);
 assert.deepStrictEqual(taxRegionPresetsForCountry('CA'), []);
@@ -131,7 +132,9 @@ assert.strictEqual(formatFullAddress({ code: 'KR', line1: '테헤란로 1', post
 assert.strictEqual(formatStreetLine('TW', '信義路', '1'), '信義路1號');
 assert.strictEqual(formatStreetLine('TW', '信義路', '1號'), '信義路1號');
 assert.strictEqual(formatStreetLine('TW', '林森北路', '561號之7'), '林森北路561號之7');
-assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路1號', postcode: '100', city: '台北市', administrativeArea: 'Taipei City', administrativeAreaCode: '', country: 'Taiwan' }), '100 台北市信義路1號, Taiwan');
+assert.strictEqual(taiwanLocalityFor('407037', '臺中市'), '臺中市西屯區');
+assert.strictEqual(taiwanLocalityFor('408', '臺中市南屯區'), '臺中市南屯區');
+assert.strictEqual(formatFullAddress({ code: 'TW', line1: '信義路1號', postcode: '100', city: '台北市', administrativeArea: 'Taipei City', administrativeAreaCode: '', country: 'Taiwan' }), '100 臺北市中正區信義路1號, Taiwan');
 assert.strictEqual(formatFullAddress({ code: 'TW', line1: '文心南五路一段398巷6號', postcode: '408', city: '臺中市南屯區', administrativeArea: 'Taichung City', administrativeAreaCode: '', country: 'Taiwan' }), '408 臺中市南屯區文心南五路一段398巷6號, Taiwan');
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Selçuklu/Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Selçuklu/Konya, Türkiye');
 assert.strictEqual(formatFullAddress({ code: 'TR', line1: 'Zakkum Sokak 4', postcode: '42110', city: 'Konya', administrativeArea: 'Konya', administrativeAreaCode: '', country: 'Türkiye' }), 'Zakkum Sokak 4, 42110 Konya, Türkiye');
@@ -176,6 +179,7 @@ for (const code of Object.keys(COUNTRIES)) {
 }
 
 const loadPool = code => JSON.parse(fs.readFileSync(`${__dirname}/data/pool/${code}.json`, 'utf8')).addrs;
+assert.ok(loadPool('TW').every(address => taiwanLocalityFor(address.p, address.c).includes('區')), 'TW pool should resolve a district from city or postcode');
 for (const area of ['Alaska', 'Delaware', 'Montana', 'New Hampshire', 'Oregon']) {
   assert.ok(loadPool('US').some(address => address.a === area), `US pool should cover tax preset area ${area}`);
 }

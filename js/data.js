@@ -301,6 +301,22 @@ function formatStreetLine(fmt, street, number) {
   return `${street} ${number}`;
 }
 
+// 当前台湾地址池覆盖地区的 3 码邮递区号；6 码邮编同样以前 3 码识别行政区。
+const TAIWAN_POSTAL_DISTRICTS = {
+  100: '中正區', 103: '大同區', 104: '中山區', 105: '松山區', 106: '大安區',
+  110: '信義區', 111: '士林區', 115: '南港區', 116: '文山區', 231: '新店區',
+  400: '中區', 402: '南區', 403: '西區', 404: '北區', 406: '北屯區', 407: '西屯區',
+  408: '南屯區', 414: '烏日區', 800: '新興區', 801: '前金區', 802: '苓雅區',
+  803: '鹽埕區', 804: '鼓山區', 805: '旗津區', 806: '前鎮區', 807: '三民區',
+};
+
+function taiwanLocalityFor(postcode, city) {
+  const normalizedCity = String(city || '').replace(/^台北市/, '臺北市').replace(/^台中市/, '臺中市');
+  if (/區/.test(normalizedCity)) return normalizedCity;
+  const district = TAIWAN_POSTAL_DISTRICTS[String(postcode || '').slice(0, 3)];
+  return normalizedCity + (district || '');
+}
+
 // 与各国 cities 数组按下标对应，作为旧地址池缺少行政区时的坐标兜底。
 // 行政区统一使用适合国际表单 State / Province / Region 字段的英文名称。
 const ADMINISTRATIVE_AREAS = {
@@ -445,7 +461,7 @@ function formatFullAddress({ code, line1, postcode, city, administrativeArea, ad
   let localityParts;
   const postalFormat = COUNTRIES[code]?.postalFormat || postalFormatForCountry(code);
   if (postalFormat === 'taiwan') {
-    const prefix = [postcode, city].filter(Boolean).join(' ');
+    const prefix = [postcode, taiwanLocalityFor(postcode, city)].filter(Boolean).join(' ');
     return [[prefix, line1].filter(Boolean).join(''), country].filter(Boolean).join(', ');
   }
   if (postalFormat === 'city-area-postcode-comma') {
